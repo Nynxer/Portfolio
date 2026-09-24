@@ -378,12 +378,12 @@ NK.term = (function () {
     return best;
   }
 
-  // GUI → CLI: a clean screen, the command types itself, then its output fades in.
-  // One thing at a time, so the reader isn't wading through old output.
+  // GUI → CLI: the command types itself at the end of the log, then its output fades in.
+  // The log persists like a real terminal (`clear` or ctrl+L wipes it); the newest command scrolls to the top.
   let typing = null;
   function type(cmd) {
-    if (typing) { clearTimeout(typing); typing = null; }
-    out.innerHTML = ""; input.value = ""; updateGhost();
+    if (typing) { clearTimeout(typing); typing = null; const c = out.querySelector(".tcur"); if (c) c.remove(); }
+    input.value = ""; updateGhost();
     const line = print(`${PS()}<span class="typed"></span><span class="tcur" aria-hidden="true"></span>`, "cmd");
     lastCmd = line; open();
     if (hist[hist.length - 1] !== cmd) { hist.push(cmd); if (hist.length > 60) hist.shift(); }

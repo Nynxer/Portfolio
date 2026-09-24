@@ -122,7 +122,7 @@
   term.on("simple", showSimple);
   // Zen mode: while the terminal is open the universe dims and holds still
   const storedMotion = () => (store.get("nk.motion") ? store.get("nk.motion") === "1" : !reduced);
-  term.on("zen", (on) => sky.setMotion(on ? false : storedMotion()));
+  term.on("zen", (on) => { sky.stow(on); sky.setMotion(on ? false : storedMotion()); });
   term.on("motion", setMotion);
   term.on("replay", () => { setHash(""); note.classList.remove("on"); sky.startIntro(); });
   // blog (Obsidian-style vault)

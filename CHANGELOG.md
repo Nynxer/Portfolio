@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3 (24 Sep 2026)
+- Persistent terminal: commands append to one log (like a real shell, `clear` wipes it). The log opens exactly where the hero sits, so the first line lands where `./hello` was and the prompt never moves. Crossfade only, no sliding panel; the header stays lit
+- The pendulum is put away while the log is on screen and re-hangs when you press Esc
+- The dot of the "i" is now a real lamp (glowing square measured onto Doto's glyph) and the bat-signal beam starts from it, slightly brighter
+- Smoother bio reveal: lines rise in with transform/opacity only (no clip-path), and the canvas runs at 60fps while the swing line slides, so the bob no longer lags the text
+- Cache-busting `?v=` on every CSS/JS link so GitHub Pages never mixes new HTML with old scripts
+
 ## v1.2 (24 Sep 2026)
 - New logo: "Ni" in Doto (square dot-matrix, weight 900), with a glowing orange "i" that is also the lamp for the torch beam
 - Pause/play and replay buttons moved next to the logo; GitHub, LinkedIn and email icons in the header

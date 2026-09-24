@@ -52,8 +52,8 @@ NK.sky = (function () {
     const u = uni.getBoundingClientRect();
     const r = pivotEl.getBoundingClientRect();
     if (r.width) { pivot.x = r.left - u.left + r.width / 2; pivot.y = r.top - u.top + r.height / 2; }
-    const li = document.querySelector(".logo-i");
-    if (li) { const lr = li.getBoundingClientRect(); lamp.x = lr.left - u.left + lr.width / 2; lamp.y = lr.top - u.top + lr.height * 0.28; }   // the dot of the i is the lamp
+    const li = document.querySelector(".logo-lamp") || document.querySelector(".logo-i");   // the dot of the i is the lamp
+    if (li) { const lr = li.getBoundingClientRect(); lamp.x = lr.left - u.left + lr.width / 2; lamp.y = lr.top - u.top + lr.height / 2; }
     pend.L = mobile() ? clamp(H * 0.055, 36, 46) : clamp(H * 0.12, 70, 120);
     return u;
   }
@@ -465,7 +465,7 @@ NK.sky = (function () {
           const ax = x - lamp.x, ay = y - lamp.y, al = ax * ux + ay * uy;
           if (al > 0 && al < bd + bR) {
             const pp = ax * uy - ay * ux, wd = 16 + bR * 2.2 * al / bd;       // wide + soft = diffused
-            v += beam.v * 0.2 * Math.exp(-(pp * pp) / (wd * wd)) * (0.35 + 0.65 * al / bd);
+            v += beam.v * 0.26 * Math.exp(-(pp * pp) / (wd * wd)) * (0.35 + 0.65 * al / bd);
           }
         }
         v += (0.07 + (motion ? 0.035 * Math.sin(i * 0.21 + tt * 1.1) * Math.sin(j * 0.17 - tt * 0.7) : 0)) * light[k];
@@ -668,7 +668,7 @@ NK.sky = (function () {
     raf = 0;
     if (hidden) { running = false; return; }
     const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
-    const hot = busy();
+    const hot = busy() || follow > 0;          // full 60fps while the swing line slides, so the bob never lags the text
     if (!motion && !hot) { draw(0); running = false; return; }   // paused & settled → stop
     // idle ambient: 30fps is plenty
     if (!hot && now - lastDraw < 31) { raf = requestAnimationFrame(frame); return; }
@@ -759,6 +759,13 @@ NK.sky = (function () {
     get size() { return { W, H }; }, measure,
     resetPendulum() { pend.snapped = false; pend.visible = true; pend.x = pivot.x; pend.y = pivot.y + pend.L; pend.vx = pend.L * 1.2; pend.vy = 0; bobEl.classList.add("on"); kick(); },
     hidePendulum() { bobEl.classList.remove("on"); },
+    // stow: while the terminal log is on screen the pendulum is put away (no bob, no flame); unstow re-hangs it at rest
+    stow(on) {
+      if (mode === "intro" || mode === "game") return;
+      if (on) { pend.visible = false; pend.grabbed = false; bobEl.classList.remove("on"); heat.fill(0); sparks.length = 0; }
+      else if (!pend.visible) { measure(); pend.visible = true; pend.snapped = false; pend.x = pivot.x; pend.y = pivot.y + pend.L; pend.vx = pend.L * 0.5; pend.vy = 0; bobEl.classList.add("on"); }
+      kick();
+    },
     uni,
     _dbg: () => ({ sparks: sparks.length, heat: heat.reduce((a, b) => a + b, 0), rings: rings.length, mode, t })
   };
