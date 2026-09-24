@@ -122,7 +122,7 @@
   term.on("simple", showSimple);
   // Zen mode: while the terminal is open the universe dims and holds still
   const storedMotion = () => (store.get("nk.motion") ? store.get("nk.motion") === "1" : !reduced);
-  term.on("zen", (on) => { sky.stow(on); sky.setMotion(on ? false : storedMotion()); });
+  term.on("zen", (on) => sky.setMotion(on ? false : storedMotion()));
   term.on("motion", setMotion);
   term.on("replay", () => { setHash(""); note.classList.remove("on"); sky.startIntro(); });
   // blog (Obsidian-style vault)
@@ -170,8 +170,20 @@
 
   // intro skip by pointer too
   document.addEventListener("pointerdown", () => { if (sky.mode === "intro") sky.skipIntro(); }, true);
-  // click on empty space collapses an open terminal
-  $("#universe").addEventListener("click", (e) => { if (e.target.id === "sky" && term.isOpen() && !game.active()) term.close(); });
+  // CLI scrolling. Desktop: the universe is a fixed backdrop, so once the hero scrolls away the pendulum is
+  // put away (it hangs from the colon) and re-hangs at the top. Phones: the universe scrolls with the page.
+  const phone = matchMedia("(max-width:760px), (max-aspect-ratio:10/11)");
+  let wasScrolled = false;
+  const onScroll = () => {
+    const s = scrollY > 12;
+    if (s === wasScrolled) return;
+    wasScrolled = s; body.classList.toggle("scrolled", s);
+    if (!phone.matches && sky.mode !== "intro" && !game.active()) sky.stow(s);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  // the prompt gets its fade only while it is pinned to the bottom over older output
+  const dock = $(".term-dock");
+  if ("IntersectionObserver" in window) new IntersectionObserver(([e]) => dock.classList.toggle("stuck", !e.isIntersecting)).observe($("#term-end"));
 
   // ---------- URL hash (deep links; works from file:// too) ----------
   let hashLock = false;

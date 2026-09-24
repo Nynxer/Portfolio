@@ -95,12 +95,18 @@ NK.term = (function () {
     follow();
     return p;
   }
-  // keep the latest command line in view, showing as much of its output as fits
-  let lastCmd = null;
+  // CLI scrolling: the page scrolls down so the newest command sits just under the header,
+  // showing as much of its output as fits (or simply the bottom, when everything fits).
+  let lastCmd = null, followRaf = 0;
+  const headerSpace = () => (matchMedia("(max-width:760px)").matches ? 76 : 96);
   function follow() {
-    requestAnimationFrame(() => {
-      const top = lastCmd && lastCmd.isConnected ? lastCmd.offsetTop - out.offsetTop - 6 : out.scrollHeight;
-      out.scrollTop = Math.min(top, out.scrollHeight);
+    cancelAnimationFrame(followRaf);
+    followRaf = requestAnimationFrame(() => {
+      const max = document.documentElement.scrollHeight - innerHeight;
+      if (!lastCmd || !lastCmd.isConnected) return;       // e.g. the motd: nothing was run, don't move
+      let top = lastCmd.getBoundingClientRect().top + scrollY - headerSpace();
+      top = Math.max(0, Math.min(top, max));
+      if (Math.abs(top - scrollY) > 2) window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
     });
   }
   const text = (s, cls) => print(esc(s), cls);
@@ -229,7 +235,7 @@ NK.term = (function () {
   def("linkedin", "open LinkedIn", () => run("open linkedin", { echo: false }));
   def("email mail", "write me an email", () => run("open email", { echo: false }));
 
-  def("clear cls", "clear the screen (ctrl+l)", () => { out.innerHTML = ""; });
+  def("clear cls", "clear the screen (ctrl+l)", () => { out.innerHTML = ""; lastCmd = null; window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" }); });
   def("history", "commands you've run", () => text(hist.map((h, i) => `${String(i + 1).padStart(4)}  ${h}`).join("\n") || "(empty)"));
   def("echo", "print text", (a) => text(a.join(" ")));
   def("date", "print the date", () => text(new Date().toString()));
@@ -314,23 +320,15 @@ NK.term = (function () {
     chipsEl.innerHTML = list.map(([c, l, h, x]) => `<button type="button" class="chip${h ? " hl" : ""}${x ? " " + x : ""}" data-type="${esc(c)}" title="runs: ${esc(c)}">${esc(l)}</button>`).join("");
   }
 
-  const scrim = document.createElement("div");
-  scrim.className = "term-open-scrim"; scrim.setAttribute("aria-hidden", "true");
-  term.parentNode.insertBefore(scrim, term);
-  scrim.addEventListener("click", () => close());
-  function open() {
-    if (term.classList.contains("open")) return;
-    term.classList.add("open"); document.body.classList.add("t-open");
-    hooks.zen && hooks.zen(true); toggle.setAttribute("aria-expanded", "true"); toggleLbl.textContent = "close";
-  }
+  // There is no window to open or close any more: the log is always part of the page.
+  // "open" = the session has output; "close" = scroll back up to ./hello (the log is kept, like scrollback).
+  function open() { term.classList.add("open"); }
   function close() {
-    const was = term.classList.contains("open");
-    term.classList.remove("open"); document.body.classList.remove("t-open");
-    if (was && hooks.zen) hooks.zen(false); toggle.setAttribute("aria-expanded", "false"); toggleLbl.textContent = "close";
+    if (scrollY > 0) window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
     if (cwd.length === 2) setCwd([]);
     hooks.close && hooks.close();
   }
-  const isOpen = () => term.classList.contains("open");
+  const isOpen = () => scrollY > 40;
 
   // ---------- run ----------
   const hist = (() => { try { return JSON.parse(localStorage.getItem("nk.hist") || "[]"); } catch (_) { return []; } })();
@@ -452,7 +450,7 @@ NK.term = (function () {
     else if (e.key === "ArrowRight" && ghost.textContent && input.selectionStart === input.value.length) { e.preventDefault(); complete(); }
     else if (e.key === "ArrowUp") { if (hist.length) { e.preventDefault(); hi = Math.max(0, hi - 1); input.value = hist[hi] || ""; updateGhost(); } }
     else if (e.key === "ArrowDown") { e.preventDefault(); hi = Math.min(hist.length, hi + 1); input.value = hist[hi] || ""; updateGhost(); }
-    else if (e.key === "l" && e.ctrlKey) { e.preventDefault(); out.innerHTML = ""; }
+    else if (e.key === "l" && e.ctrlKey) { e.preventDefault(); run("clear", { echo: false }); }
     else if (e.key === "c" && e.ctrlKey && !window.getSelection().toString()) { e.preventDefault(); print(`${PS()}${esc(input.value)}^C`, "cmd"); input.value = ""; updateGhost(); }
   });
   out.addEventListener("click", (e) => {
@@ -469,11 +467,12 @@ NK.term = (function () {
   });
 
   function motd() {
-    print(`<span class="w">Hi, I'm Nikhil.</span> This portfolio is a terminal — type, or just click.`);
-    print(`<span class="dim">start with</span> ${R("ls universe")} <span class="dim">or</span> ${R("whoami")}<span class="dim">. Stuck? </span>${R("help")}`);
+    if (out.children.length) return;
+    print(`<span class="dim"># this portfolio is a terminal: type, or click a world →</span>`, "motd");
+    print(`<span class="dim"># try</span> ${R("ls universe")}<span class="dim">,</span> ${R("whoami")} <span class="dim">or</span> ${R("help")}`, "motd");
   }
 
-  const DEFAULT_STATUS = `# <b>pick a world</b>hover to preview · or type <span class="k">help</span>`;
+  const DEFAULT_STATUS = `<span class="kbd">tab</span> complete <span class="kbd">↑</span> history <span class="kbd">esc</span> back to top`;
   function setStatus(html) { status.innerHTML = html || DEFAULT_STATUS; }
   setStatus("");
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.4 (24 Sep 2026)
+- The left side is one real CLI session: `./hello` → its output → the log → the prompt. Commands append and the page scrolls down; the hero scrolls up like old output. Esc scrolls back to the top (scrollback is kept), `clear` wipes it
+- The prompt follows the output and pins to the bottom once the output is taller than the screen; it fades what's under it only while pinned
+- Desktop: the universe is a fixed backdrop and the worlds stay clickable while you scroll; the pendulum is put away once the hero scrolls off and re-hangs at the top. Phones and portrait tablets: the universe is the first screen and scrolls away with the page
+- The i's lamp is off at rest and strikes like a neon tube (white-hot core, tight halo, brief flicker) only while a world is hovered, when the bat-signal fires from it
+- Bio slide rebuilt: the name and swing line are moved by sky.js in the same frame that draws the pendulum, so the bob stays locked to the colon (measured: an even ease-out, no skipped frames)
+
 ## v1.3 (24 Sep 2026)
 - Persistent terminal: commands append to one log (like a real shell, `clear` wipes it). The log opens exactly where the hero sits, so the first line lands where `./hello` was and the prompt never moves. Crossfade only, no sliding panel; the header stays lit
 - The pendulum is put away while the log is on screen and re-hangs when you press Esc

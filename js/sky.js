@@ -344,6 +344,7 @@ NK.sky = (function () {
   function startIntro() {
     mode = "intro";
     document.body.classList.add("intro"); document.body.classList.remove("bio-on");
+    if (slide) { slide.up.concat(slide.down).forEach((el) => el && (el.style.transform = "")); slide = null; }
     const s = script();
     intro = { t0: performance.now(), i: 0, ...s, colonAt: s.typedEnd + 80, bangAt: s.typedEnd + 520 };
     intro.dropAt = intro.bangAt + 80; intro.loopAt = intro.dropAt + 380; intro.loopDur = 720; intro.spin = 620;
@@ -433,7 +434,7 @@ NK.sky = (function () {
     pend.visible = true; bobEl.classList.add("on");
     intro = null; mode = "idle";
     document.body.classList.remove("intro");
-    if (!document.body.classList.contains("bio-on")) { document.body.classList.add("bio-on"); follow = performance.now() + 950; }
+    if (!document.body.classList.contains("bio-on")) startSlide();
     try { localStorage.setItem("nk.seen", "1"); } catch (_) {}
     emit("ready", skipped);
     kick();
@@ -652,6 +653,30 @@ NK.sky = (function () {
   const target = (p) => (mode === "game" ? 0 : hover === p.i || pinned === p.i ? 1 : 0);
 
   let inFrame = false, follow = 0;
+  // Bio "doors": the name moves up and the swing line moves down to make room for the two bio lines.
+  // Driven here, in the same frame that draws the canvas, so the pendulum is always exactly under the colon
+  // (CSS transitions run on another thread, and the bob visibly lagged them).
+  let slide = null;
+  const easeOutCubic = (k) => 1 - Math.pow(1 - k, 3);
+  function startSlide() {
+    const g = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap")) || 0) / 2;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    slide = { t0: performance.now(), dur: reduce ? 0 : 820, g, up: [$(".hero .prompt"), $(".hero .headline")], down: $(".hero .spark") };
+    applySlide(slide.t0);                  // closed position first, then the class (no jump)
+    document.body.classList.add("bio-on");
+    follow = performance.now() + slide.dur + 60;
+    kick();
+  }
+  function applySlide(now) {
+    if (!slide) return;
+    const k = slide.dur ? clamp((now - slide.t0) / slide.dur, 0, 1) : 1, off = slide.g * (1 - easeOutCubic(k));
+    const a = `translate3d(0,${off.toFixed(2)}px,0)`, b = `translate3d(0,${(-off).toFixed(2)}px,0)`;
+    slide.up.forEach((el) => el && (el.style.transform = a));
+    if (slide.down) slide.down.style.transform = b;
+    if (k >= 1) { slide.up.concat(slide.down).forEach((el) => el && (el.style.transform = "")); slide = null; }
+  }
+  let lampLit = false;
+  const logoEl = document.querySelector(".logo");
   // recompute world slots (e.g. after the bio slid in) and glide settled worlds there
   function reslot() {
     planets.forEach((p, i) => {
@@ -675,7 +700,7 @@ NK.sky = (function () {
     const fdt = Math.min(0.05, (now - (lastDraw || now)) / 1000); lastDraw = now;
     if (motion || hot) t += fdt;
     if (mode === "intro" && intro) introTick(now);
-    if (follow) { measure(); if (now > follow) { follow = 0; reslot(); } }   // track the sliding swing line
+    if (follow) { applySlide(now); measure(); if (now > follow) { follow = 0; reslot(); } }   // track the sliding swing line
     update(fdt);
     draw(fdt);
     raf = requestAnimationFrame(frame);
@@ -686,6 +711,8 @@ NK.sky = (function () {
     stepHeat(dt);
     const want = hover >= 0 ? hover : pinned;
     if (want >= 0) beam.i = want;
+    const lit = want >= 0 && mode !== "game";              // the i's dot lights up only while a world is lit
+    if (lit !== lampLit && logoEl) { lampLit = lit; logoEl.classList.toggle("lit", lit); }
     beam.v += ((want >= 0 ? 1 : 0) - beam.v) * Math.min(1, dt * 9);
     for (let k = rings.length - 1; k >= 0; k--) if (t - rings[k].t0 > rings[k].life) rings.splice(k, 1);
     planets.forEach((p) => {
