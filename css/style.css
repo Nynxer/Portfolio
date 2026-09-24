@@ -458,6 +458,8 @@ a.wl.unresolved{color:var(--text-3);text-decoration-style:dashed;text-decoration
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+  /* keep the bio reveal as a soft fade rather than a pop (sky.js glides the lines apart over 480ms) */
+  .bio-l{transform:none!important;transition:opacity .45s ease!important}
 }
 @media print{
   .universe,.top,.term,.hud,.skip{display:none!important}

@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.5 (24 Sep 2026)
+- Fix: with the OS "reduce motion" setting on, the bio lines popped in and the pendulum froze after the intro. The lines now glide apart (480ms, soft fade) and the pendulum swings and settles
+
 ## v1.4 (24 Sep 2026)
 - The left side is one real CLI session: `./hello` → its output → the log → the prompt. Commands append and the page scrolls down; the hero scrolls up like old output. Esc scrolls back to the top (scrollback is kept), `clear` wipes it
 - The prompt follows the output and pins to the bottom once the output is taller than the screen; it fades what's under it only while pinned

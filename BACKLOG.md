@@ -87,6 +87,21 @@ _Done 24 Sep: items marked [x], plus Zen mode (terminal centred; universe dims, 
 - [ ] Serve fonts as cached .woff2 files instead of inline base64 (and subset Doto when it's added).
 - [x] Test at 360px wide and in phone landscape.
 
+### Bugs
+- [x] Bio slide popped in ("creates space, then pops") and the pendulum froze afterwards. Cause: the OS "reduce motion" setting (Windows: Settings → Accessibility → Visual effects → Animation effects off) made the slide instant and paused the pendulum, which then slept mid-air. Fix (v1.5): under reduced motion the lines glide apart over 480ms with a soft fade, and the bob is always given a push so it swings and settles instead of freezing.
+- [ ] Bio slide: still check on a real Windows laptop (normal and reduced motion) and on a phone; tune the easing if it still feels rough.
+
+### Next (added 24 Sep)
+- [ ] Consolidate the logo and contacts: bring the GitHub / LinkedIn / email / Résumé links together with the "Ni" logo into one tidy brand + contact group, instead of logo top-left and icons top-right.
+- [ ] Blog opens with a smooth sliding-window animation from top to bottom (the vault slides down over the universe; closing slides it back up). Transform/opacity only, respects reduced motion.
+- [ ] SEO for Google searches:
+  - Real, crawlable content in the static HTML (name, role, TU/e, projects, experience), not only JS-rendered
+  - Structured data: JSON-LD `Person` (name, alumniOf, affiliation, sameAs → GitHub/LinkedIn) + `WebSite`
+  - `og:image` + Twitter card image; unique title/description per blog post
+  - `sitemap.xml` + `robots.txt`; canonical URLs; crawlable blog post URLs (not only `#/blog/...` hashes)
+  - Register in Google Search Console and submit the sitemap; custom domain later
+  - Lighthouse SEO + performance pass
+
 ## v2: AI layer (idea stage)
 
 ### Auto-generated worlds

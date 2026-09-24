@@ -430,7 +430,9 @@ NK.sky = (function () {
       if (skipped) { p.fly = null; p.x = p.sx; p.y = p.sy; p.scale = 1; p.form = 1; }
     });
     pend.spinning = false;
-    if (pend.scripted || skipped) { pend.scripted = false; pend.x = pivot.x + (skipped ? pend.L * 0.2 : 0); pend.y = pivot.y + pend.L; pend.vx = 0; pend.vy = 0; }
+    // always leave the bob moving: with motion paused (or reduced motion) the loop sleeps as soon as the bob is
+    // still, which froze it mid-air; a push lets it swing and settle naturally (motion off damps it to rest)
+    if (pend.scripted || skipped) { pend.scripted = false; pend.x = pivot.x; pend.y = pivot.y + pend.L; pend.vx = pend.L * (motion ? 1.2 : 1.6); pend.vy = 0; }
     pend.visible = true; bobEl.classList.add("on");
     intro = null; mode = "idle";
     document.body.classList.remove("intro");
@@ -661,7 +663,7 @@ NK.sky = (function () {
   function startSlide() {
     const g = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gap")) || 0) / 2;
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    slide = { t0: performance.now(), dur: reduce ? 0 : 820, g, up: [$(".hero .prompt"), $(".hero .headline")], down: $(".hero .spark") };
+    slide = { t0: performance.now(), dur: reduce ? 480 : 820, g, up: [$(".hero .prompt"), $(".hero .headline")], down: $(".hero .spark") };
     applySlide(slide.t0);                  // closed position first, then the class (no jump)
     document.body.classList.add("bio-on");
     follow = performance.now() + slide.dur + 60;
