@@ -1,13 +1,102 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>portfolio</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nikhil Kamath — developer &amp; maker</title>
+<meta name="description" content="Nikhil Kamath — Go backends, AI & robotics, 3D printing and curious builds. A terminal-first, dot-matrix portfolio.">
+<meta name="theme-color" content="#04060A">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="Nikhil Kamath — developer & maker">
+<meta property="og:description" content="Terminal-first portfolio. Type help, or click a planet.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2304060A'/%3E%3Cg fill='%235FF3FF'%3E%3Ccircle cx='4' cy='4' r='1.2'/%3E%3Ccircle cx='4' cy='7' r='1.2'/%3E%3Ccircle cx='4' cy='10' r='1.2'/%3E%3Ccircle cx='4' cy='13' r='1.2'/%3E%3Ccircle cx='7' cy='6' r='1.2'/%3E%3Ccircle cx='9' cy='9' r='1.2'/%3E%3Ccircle cx='12' cy='4' r='1.2'/%3E%3Ccircle cx='12' cy='7' r='1.2'/%3E%3Ccircle cx='12' cy='10' r='1.2'/%3E%3Ccircle cx='12' cy='13' r='1.2'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/style.css">
+<script>document.documentElement.classList.add('js')</script>
+<script defer src="js/data.js"></script>
+<script defer src="js/posts.js"></script>
+<script defer src="js/markdown.js"></script>
+<script defer src="js/sky.js"></script>
+<script defer src="js/sling-core.js"></script>
+<script defer src="js/game.js"></script>
+<script defer src="js/terminal.js"></script>
+<script defer src="js/blog.js"></script>
+<script defer src="js/main.js"></script>
+</head>
+<body>
+<a class="skip" href="#term-input">Skip to terminal</a>
+
+<header class="top">
+  <a class="logo" href="#" aria-label="Nikhil — home"><svg class="logo-svg" viewBox="0 0 40.2 31.4" width="40" height="31" aria-hidden="true" focusable="false"><g fill="#5FF3FF"><circle cx="2.5" cy="2.5" r="1.7"/><circle cx="20.1" cy="2.5" r="1.7"/><circle cx="2.5" cy="6.9" r="1.7"/><circle cx="6.9" cy="6.9" r="1.7"/><circle cx="20.1" cy="6.9" r="1.7"/><circle cx="2.5" cy="11.3" r="1.7"/><circle cx="11.3" cy="11.3" r="1.7"/><circle cx="20.1" cy="11.3" r="1.7"/><circle cx="2.5" cy="15.7" r="1.7"/><circle cx="11.3" cy="15.7" r="1.7"/><circle cx="20.1" cy="15.7" r="1.7"/><circle cx="2.5" cy="20.1" r="1.7"/><circle cx="15.7" cy="20.1" r="1.7"/><circle cx="20.1" cy="20.1" r="1.7"/><circle cx="2.5" cy="24.5" r="1.7"/><circle cx="20.1" cy="24.5" r="1.7"/><circle cx="2.5" cy="28.9" r="1.7"/><circle cx="20.1" cy="28.9" r="1.7"/></g><g fill="#E9FBFF"><circle cx="28.9" cy="11.3" r="1.7"/><circle cx="33.3" cy="11.3" r="1.7"/><circle cx="33.3" cy="15.7" r="1.7"/><circle cx="33.3" cy="20.1" r="1.7"/><circle cx="33.3" cy="24.5" r="1.7"/><circle cx="28.9" cy="28.9" r="1.7"/><circle cx="33.3" cy="28.9" r="1.7"/><circle cx="37.7" cy="28.9" r="1.7"/></g><circle class="logo-i" cx="33.3" cy="2.5" r="2.3" fill="#E9FBFF"/></svg></a>
+  <nav class="nav" aria-label="Main">
+    <button type="button" class="nav-link" data-cmd="whoami">About</button>
+    <button type="button" class="nav-link" data-cmd="blog">Blog</button>
+    <button type="button" class="nav-link" data-cmd="contact">Contact</button>
+    <a class="nav-link" id="nav-resume" href="#" target="_blank" rel="noopener">Résumé<span aria-hidden="true"> ↗</span></a>
+    <button type="button" class="pill" id="btn-simple">Simple view</button>
+  </nav>
+</header>
+
+<main id="universe" class="universe">
+  <canvas id="sky" aria-hidden="true"></canvas>
+
+  <section class="hero" aria-labelledby="hello">
+    <p class="prompt"><span aria-hidden="true"><span class="p-user">nikhil@universe</span><span class="p-dim">:~$</span> <span id="ty-cmd"></span></span></p>
+    <h1 id="hello" class="headline"><span class="sr" id="hello-sr"></span><span class="dm" aria-hidden="true"><span id="ty-0"></span><br><span id="ty-1"></span></span></h1>
+    <p class="bio" id="bio"></p>
+    <p class="spark" aria-hidden="true"><span id="ty-2"></span><span class="colon" id="colon"><i class="c-top" id="pivot"></i><i class="c-bot" id="c-bot"></i></span></p>
+    <span class="caret" id="caret" aria-hidden="true"></span>
+  </section>
+
+  <ul class="worlds" id="worlds" aria-label="Worlds — pick one to explore"></ul>
+
+  <button type="button" class="bob" id="bob" aria-label="Pendulum — drag it, or swing it with the left and right arrow keys" aria-describedby="bob-tip"><span class="sr" id="bob-tip">A toy. Try shaking it.</span></button>
+
+  <p class="skip-hint" id="skip-hint" aria-hidden="true">press any key to skip</p>
+</main>
+
+<!-- Terminal: the primary way to navigate. GUI clicks run the same commands. -->
+<section class="term" id="term" aria-label="Terminal">
+  <div class="term-bar">
+    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="term-title" id="term-title">~</span>
+    <span class="term-help" id="term-help"><span class="kbd">tab</span> complete <span class="kbd">↑</span> history</span>
+    <button type="button" class="term-toggle" id="term-toggle" aria-expanded="false" aria-controls="term-out"><span class="kbd">esc</span> <span id="term-toggle-lbl">close</span></button>
+  </div>
+  <div class="term-out" id="term-out" role="log" aria-live="polite" aria-label="Terminal output" tabindex="-1"></div>
+  <p class="term-status" id="term-status" aria-hidden="true"></p>
+  <form class="term-form" id="term-form" autocomplete="off">
+    <label for="term-input" class="term-ps"><span id="ps-cwd">~</span><span class="ps-arrow" aria-hidden="true">❯</span><span class="sr">command</span></label>
+    <div class="term-field">
+      <span class="term-ghost" id="term-ghost" aria-hidden="true"></span>
+      <input id="term-input" name="cmd" type="text" enterkeyhint="go" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="term-help" placeholder="type help">
+    </div>
+    <button type="submit" class="term-run" aria-label="Run command">↵</button>
+  </form>
+  <div class="chips" id="chips" aria-label="Suggested commands"></div>
+</section>
+
+<div class="controls" id="controls">
+  <button type="button" class="icon-btn" id="btn-motion" aria-pressed="false" title="Pause motion"><span class="ic" aria-hidden="true">‖</span><span class="lbl sr">Pause motion</span></button>
+  <button type="button" class="icon-btn" id="btn-replay" title="Replay intro"><span class="ic" aria-hidden="true">↻</span><span class="lbl sr">Replay intro</span></button>
+</div>
+
+<section class="simple" id="simple" aria-label="Simple view" hidden tabindex="-1"></section>
+
+<section class="vault" id="vault" aria-label="Blog" hidden tabindex="-1"></section>
+
+<div class="hud" id="hud" hidden>
+  <p class="hud-top" id="hud-top"></p>
+  <p class="hud-msg" id="hud-msg" role="status" aria-live="polite"></p>
+  <p class="hud-help" id="hud-help"></p>
+</div>
+
+<noscript>
+  <div class="nojs">
+    <h1>Nikhil Kamath</h1>
+    <p>Developer &amp; maker — Go backends, AI &amp; robotics, 3D printing. MSc AI &amp; Engineering Systems at TU/e.</p>
+    <p><a href="mailto:niskamath@gmail.com">niskamath@gmail.com</a> · <a href="https://github.com/Nynxer">GitHub</a> · <a href="https://www.linkedin.com/in/niskamath">LinkedIn</a> · <a href="https://drive.google.com/file/d/1W98bTHA28VhHaj-DHMyxhjsBbndoo_OG/view?usp=sharing">Résumé</a></p>
+  </div>
+</noscript>
+</body>
 </html>
