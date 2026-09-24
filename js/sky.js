@@ -53,7 +53,7 @@ NK.sky = (function () {
     const r = pivotEl.getBoundingClientRect();
     if (r.width) { pivot.x = r.left - u.left + r.width / 2; pivot.y = r.top - u.top + r.height / 2; }
     const li = document.querySelector(".logo-i");
-    if (li) { const lr = li.getBoundingClientRect(); lamp.x = lr.left - u.left + lr.width / 2; lamp.y = lr.top - u.top + lr.height / 2; }
+    if (li) { const lr = li.getBoundingClientRect(); lamp.x = lr.left - u.left + lr.width / 2; lamp.y = lr.top - u.top + lr.height * 0.28; }   // the dot of the i is the lamp
     pend.L = mobile() ? clamp(H * 0.055, 36, 46) : clamp(H * 0.12, 70, 120);
     return u;
   }
@@ -64,11 +64,12 @@ NK.sky = (function () {
     if (!tall()) {
       x0 = Math.max(W * 0.54, hero.right - u.left + 40); x1 = W - Math.max(40, W * 0.045);
       y0 = 100; y1 = H - 185;
+      if (H < 560) { y0 = 64; y1 = H - 20; }      // short landscape: the prompt sits under the hero, not under the worlds
       S = SLOTS_WIDE[i];
     } else {
       x0 = mobile() ? 20 : W * 0.12; x1 = W - x0;
       y0 = Math.max(pivot.y + pend.L + 34, hero.bottom - u.top + 28); y1 = H - (mobile() ? 178 : 190);
-      if (y1 - y0 < 300) y1 = y0 + 300;
+      if (y1 - y0 < 240) y1 = y0 + 240;          // small phones: planets shrink rather than slide under the prompt
       S = SLOTS_TALL[i];
     }
     const rw = x1 - x0, rh = y1 - y0;

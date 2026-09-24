@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 — Nikhil Kamath</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#04060A">
+<meta name="color-scheme" content="dark">
+<style>
+  :root { --bg:#04060A; --dot:#0f1a22; --ink:#E9FBFF; --dim:#6b8a94; --cyan:#5FF3FF; --orange:#FF8A3D; }
+  * { box-sizing:border-box; margin:0; }
+  html, body { height:100%; }
+  body {
+    background:var(--bg);
+    background-image:radial-gradient(var(--dot) 1.2px, transparent 1.3px);
+    background-size:14px 14px;
+    color:var(--ink);
+    font:15px/1.6 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    display:grid; place-items:center; padding:16px;
+  }
+  main { width:min(560px, 100%); }
+  .big { font-size:clamp(56px, 18vw, 120px); line-height:1; font-weight:700; letter-spacing:-.02em; color:var(--cyan); }
+  .big span { color:var(--orange); }
+  p { margin-top:14px; }
+  .u { color:var(--cyan); } .d { color:var(--dim); } .e { color:var(--orange); }
+  a { color:var(--cyan); text-underline-offset:3px; }
+  a:focus-visible { outline:2px solid var(--orange); outline-offset:3px; }
+  .caret { display:inline-block; width:.6em; height:1.1em; vertical-align:-.2em; background:var(--cyan); animation:b 1s steps(1) infinite; }
+  @keyframes b { 50% { opacity:0; } }
+  @media (prefers-reduced-motion:reduce) { .caret { animation:none; } }
+</style>
+</head>
+<body>
+<main>
+  <p class="big" aria-hidden="true">4<span>0</span>4</p>
+  <p><span class="u">nikhil@universe</span><span class="d">:~$</span> cd <span id="path"></span></p>
+  <p class="e">cd: no such file or directory</p>
+  <p class="d">This page drifted out of orbit.</p>
+  <p><span class="u">nikhil@universe</span><span class="d">:~$</span> <a id="home" href="/Portfolio/">cd ~</a> <span class="caret" aria-hidden="true"></span></p>
+</main>
+<script>
+  // Works on any repo name: the site root is the first path segment on github.io.
+  var seg = location.pathname.split("/").filter(Boolean);
+  var root = location.hostname.endsWith("github.io") && seg.length ? "/" + seg[0] + "/" : "/";
+  document.getElementById("home").href = root;
+  document.getElementById("path").textContent = location.pathname.replace(root, "") || "/";
+</script>
+</body>
+</html>

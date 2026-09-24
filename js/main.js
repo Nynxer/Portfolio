@@ -33,7 +33,7 @@
   function setMotion(on) {
     sky.setMotion(on);
     btnMotion.setAttribute("aria-pressed", String(!on));
-    btnMotion.querySelector(".ic").textContent = on ? "‖" : "▶";
+    btnMotion.classList.toggle("paused", !on);
     btnMotion.querySelector(".lbl").textContent = on ? "Pause motion" : "Play motion";
     btnMotion.title = on ? "Pause motion" : "Resume motion";
     store.set("nk.motion", on ? "1" : "0");
@@ -51,12 +51,13 @@
       <div class="simple-top"><button type="button" class="pill ghost" id="simple-back">← <span>Back to universe</span></button><button type="button" class="pill ghost" onclick="print()">Print</button></div>
       <h1>${esc(P.name)}</h1>
       <p class="lead">${esc(P.role)} · ${esc(P.location)}</p>
+      ${P.openTo ? `<p class="lead"><b>${esc(P.openTo)}</b></p>` : ""}
       <ul class="o-hl" style="margin:24px 0 28px">${P.highlights.map(([a, b]) => `<li><b>${esc(a)}</b> — ${esc(b)}</li>`).join("")}</ul>
       ${P.bio.map((b) => `<p>${esc(b)}</p>`).join("")}
       <div class="links">${["email", "github", "linkedin", "resume"].map((k) => `<a href="${esc(L[k].url)}"${k === "email" ? "" : ' target="_blank" rel="noopener"'}>${esc(k === "resume" ? "Résumé ↗" : L[k].label)}</a>`).join("")}</div>
       <h2>Projects</h2>
       ${D.worlds.map((w) => `<section aria-labelledby="sw-${w.id}"><div class="world-h"><h3 id="sw-${w.id}">${esc(w.name)}</h3><span>${esc(w.tagline)}</span></div>
-        <ul>${w.projects.map((p) => `<li class="p"><h3>${esc(p.title)}</h3><p>${esc(p.summary)}</p><p class="g">${p.tags.map(esc).join(" · ")}</p></li>`).join("")}</ul></section>`).join("")}
+        <ul>${w.projects.map((p) => `<li class="p"><h3>${esc(p.title)}${p.repo ? ` <a href="${esc(p.repo)}" target="_blank" rel="noopener">repo ↗</a>` : ""}</h3><p>${esc(p.summary)}</p><p class="g">${p.tags.map(esc).join(" · ")}</p></li>`).join("")}</ul></section>`).join("")}
       <h2>Experience</h2>
       <ul>${D.experience.map((e) => `<li class="p"><h3>${esc(e.role)} · ${esc(e.org)}</h3><p class="dim">${esc(e.when)} · ${esc(e.where)}</p><p>${esc(e.what)}</p></li>`).join("")}</ul>
       <h2>Education</h2>

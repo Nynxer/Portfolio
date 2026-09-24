@@ -3,12 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Nikhil Kamath — developer &amp; maker</title>
-<meta name="description" content="Nikhil Kamath — Go backends, AI & robotics, 3D printing and curious builds. A terminal-first, dot-matrix portfolio.">
+<title>Nikhil Kamath — MSc AI &amp; Engineering Systems @ TU/e</title>
+<meta name="description" content="Nikhil Kamath — MSc AI & Engineering Systems student at TU/e, Eindhoven. Go backends, AI & robotics, 3D printing. Open to thesis & internship roles in Brainport.">
+<link rel="canonical" href="https://nynxer.github.io/Portfolio/">
 <meta name="theme-color" content="#04060A">
 <meta name="color-scheme" content="dark">
-<meta property="og:title" content="Nikhil Kamath — developer & maker">
-<meta property="og:description" content="Terminal-first portfolio. Type help, or click a planet.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://nynxer.github.io/Portfolio/">
+<meta property="og:site_name" content="Nikhil Kamath">
+<meta property="og:title" content="Nikhil Kamath — MSc AI & Engineering Systems @ TU/e">
+<meta property="og:description" content="Go backends, AI & robotics, 3D printing. A terminal-first, dot-matrix portfolio — type help, or click a planet.">
+<!-- TODO: add og:image (1200×630 screenshot of the hero) at img/og.png, then uncomment:
+<meta property="og:image" content="https://nynxer.github.io/Portfolio/img/og.png">
+<meta name="twitter:card" content="summary_large_image"> -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Nikhil Kamath — MSc AI & Engineering Systems @ TU/e">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2304060A'/%3E%3Cg fill='%235FF3FF'%3E%3Ccircle cx='4' cy='4' r='1.2'/%3E%3Ccircle cx='4' cy='7' r='1.2'/%3E%3Ccircle cx='4' cy='10' r='1.2'/%3E%3Ccircle cx='4' cy='13' r='1.2'/%3E%3Ccircle cx='7' cy='6' r='1.2'/%3E%3Ccircle cx='9' cy='9' r='1.2'/%3E%3Ccircle cx='12' cy='4' r='1.2'/%3E%3Ccircle cx='12' cy='7' r='1.2'/%3E%3Ccircle cx='12' cy='10' r='1.2'/%3E%3Ccircle cx='12' cy='13' r='1.2'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/style.css">
@@ -27,13 +36,24 @@
 <a class="skip" href="#term-input">Skip to terminal</a>
 
 <header class="top">
-  <a class="logo" href="#" aria-label="Nikhil — home"><svg class="logo-svg" viewBox="0 0 40.2 31.4" width="40" height="31" aria-hidden="true" focusable="false"><g fill="#5FF3FF"><circle cx="2.5" cy="2.5" r="1.7"/><circle cx="20.1" cy="2.5" r="1.7"/><circle cx="2.5" cy="6.9" r="1.7"/><circle cx="6.9" cy="6.9" r="1.7"/><circle cx="20.1" cy="6.9" r="1.7"/><circle cx="2.5" cy="11.3" r="1.7"/><circle cx="11.3" cy="11.3" r="1.7"/><circle cx="20.1" cy="11.3" r="1.7"/><circle cx="2.5" cy="15.7" r="1.7"/><circle cx="11.3" cy="15.7" r="1.7"/><circle cx="20.1" cy="15.7" r="1.7"/><circle cx="2.5" cy="20.1" r="1.7"/><circle cx="15.7" cy="20.1" r="1.7"/><circle cx="20.1" cy="20.1" r="1.7"/><circle cx="2.5" cy="24.5" r="1.7"/><circle cx="20.1" cy="24.5" r="1.7"/><circle cx="2.5" cy="28.9" r="1.7"/><circle cx="20.1" cy="28.9" r="1.7"/></g><g fill="#E9FBFF"><circle cx="28.9" cy="11.3" r="1.7"/><circle cx="33.3" cy="11.3" r="1.7"/><circle cx="33.3" cy="15.7" r="1.7"/><circle cx="33.3" cy="20.1" r="1.7"/><circle cx="33.3" cy="24.5" r="1.7"/><circle cx="28.9" cy="28.9" r="1.7"/><circle cx="33.3" cy="28.9" r="1.7"/><circle cx="37.7" cy="28.9" r="1.7"/></g><circle class="logo-i" cx="33.3" cy="2.5" r="2.3" fill="#E9FBFF"/></svg></a>
+  <div class="brand">
+    <a class="logo" href="#" aria-label="Nikhil — home"><span class="logo-n" aria-hidden="true">N</span><span class="logo-i" aria-hidden="true">i</span></a>
+    <div class="brand-tools" id="controls">
+      <button type="button" class="icon-btn" id="btn-motion" aria-pressed="false" title="Pause motion"><svg class="ic-pause" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><rect x="3.5" y="2.5" width="3" height="11" rx=".6" fill="currentColor"/><rect x="9.5" y="2.5" width="3" height="11" rx=".6" fill="currentColor"/></svg><svg class="ic-play" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8L13 8z" fill="currentColor"/></svg><span class="lbl sr">Pause motion</span></button>
+      <button type="button" class="icon-btn" id="btn-replay" title="Replay intro"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false"><path d="M13 8a5 5 0 1 1-1.6-3.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12.6 1.6v3.3H9.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl sr">Replay intro</span></button>
+    </div>
+  </div>
   <nav class="nav" aria-label="Main">
     <button type="button" class="nav-link" data-cmd="whoami">About</button>
     <button type="button" class="nav-link" data-cmd="blog">Blog</button>
     <button type="button" class="nav-link" data-cmd="contact">Contact</button>
-    <a class="nav-link" id="nav-resume" href="#" target="_blank" rel="noopener">Résumé<span aria-hidden="true"> ↗</span></a>
-    <button type="button" class="pill" id="btn-simple">Simple view</button>
+    <span class="socials">
+      <a class="icon-btn soc" id="nav-github" href="https://github.com/Nynxer" target="_blank" rel="noopener" title="GitHub"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span class="sr">GitHub</span></a>
+      <a class="icon-btn soc" id="nav-linkedin" href="https://www.linkedin.com/in/niskamath" target="_blank" rel="noopener" title="LinkedIn"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M0 1.15C0 .52.52 0 1.16 0h13.68C15.48 0 16 .52 16 1.15v13.7c0 .63-.52 1.15-1.16 1.15H1.16C.52 16 0 15.48 0 14.85V1.15zM4.94 13.4V6.17H2.53v7.23h2.4zM3.74 5.18c.84 0 1.36-.56 1.36-1.25-.02-.71-.52-1.25-1.35-1.25-.82 0-1.36.54-1.36 1.25 0 .7.52 1.25 1.33 1.25h.02zm4.93 8.22V9.36c0-.21.02-.43.08-.58.17-.43.57-.88 1.23-.88.87 0 1.22.66 1.22 1.64v3.86h2.4V9.25c0-2.22-1.18-3.25-2.77-3.25-1.28 0-1.84.7-2.16 1.2v.02h-.01l.01-.02V6.17h-2.4c.03.68 0 7.23 0 7.23h2.4z"/></svg><span class="sr">LinkedIn</span></a>
+      <a class="icon-btn soc" id="nav-email" href="mailto:niskamath@gmail.com" title="Email"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.4" d="M1.5 3.5h13v9h-13z M1.5 3.9 8 9l6.5-5.1"/></svg><span class="sr">Email</span></a>
+    </span>
+    <a class="nav-link" id="nav-resume" href="https://drive.google.com/file/d/1W98bTHA28VhHaj-DHMyxhjsBbndoo_OG/view?usp=sharing" target="_blank" rel="noopener">Résumé<span aria-hidden="true"> ↗</span></a>
+    <button type="button" class="pill" id="btn-simple"><span class="sv-long">Simple view</span><span class="sv-short" aria-hidden="true">Simple</span></button>
   </nav>
 </header>
 
@@ -58,7 +78,6 @@
 <!-- Terminal: the primary way to navigate. GUI clicks run the same commands. -->
 <section class="term" id="term" aria-label="Terminal">
   <div class="term-bar">
-    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
     <span class="term-title" id="term-title">~</span>
     <span class="term-help" id="term-help"><span class="kbd">tab</span> complete <span class="kbd">↑</span> history</span>
     <button type="button" class="term-toggle" id="term-toggle" aria-expanded="false" aria-controls="term-out"><span class="kbd">esc</span> <span id="term-toggle-lbl">close</span></button>
@@ -66,21 +85,16 @@
   <div class="term-out" id="term-out" role="log" aria-live="polite" aria-label="Terminal output" tabindex="-1"></div>
   <p class="term-status" id="term-status" aria-hidden="true"></p>
   <form class="term-form" id="term-form" autocomplete="off">
-    <label for="term-input" class="term-ps"><span id="ps-cwd">~</span><span class="ps-arrow" aria-hidden="true">❯</span><span class="sr">command</span></label>
+    <label for="term-input" class="term-ps"><span aria-hidden="true"><span class="p-user">nikhil@universe</span><span class="p-dim">:</span><span id="ps-cwd" class="c-path">~</span><span class="p-dim">$</span></span><span class="sr">command</span></label>
     <div class="term-field">
       <span class="term-ghost" id="term-ghost" aria-hidden="true"></span>
       <input id="term-input" name="cmd" type="text" enterkeyhint="go" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="term-help" placeholder="type help">
+      <span class="term-cur" aria-hidden="true"></span>
     </div>
     <button type="submit" class="term-run" aria-label="Run command">↵</button>
   </form>
   <div class="chips" id="chips" aria-label="Suggested commands"></div>
 </section>
-
-<div class="controls" id="controls">
-  <button type="button" class="icon-btn" id="btn-motion" aria-pressed="false" title="Pause motion"><span class="ic" aria-hidden="true">‖</span><span class="lbl sr">Pause motion</span></button>
-  <button type="button" class="icon-btn" id="btn-replay" title="Replay intro"><span class="ic" aria-hidden="true">↻</span><span class="lbl sr">Replay intro</span></button>
-</div>
-
 <section class="simple" id="simple" aria-label="Simple view" hidden tabindex="-1"></section>
 
 <section class="vault" id="vault" aria-label="Blog" hidden tabindex="-1"></section>
@@ -95,6 +109,7 @@
   <div class="nojs">
     <h1>Nikhil Kamath</h1>
     <p>Developer &amp; maker — Go backends, AI &amp; robotics, 3D printing. MSc AI &amp; Engineering Systems at TU/e.</p>
+    <p>Open to thesis &amp; internship roles in the Brainport region (AI, robotics, embedded).</p>
     <p><a href="mailto:niskamath@gmail.com">niskamath@gmail.com</a> · <a href="https://github.com/Nynxer">GitHub</a> · <a href="https://www.linkedin.com/in/niskamath">LinkedIn</a> · <a href="https://drive.google.com/file/d/1W98bTHA28VhHaj-DHMyxhjsBbndoo_OG/view?usp=sharing">Résumé</a></p>
   </div>
 </noscript>

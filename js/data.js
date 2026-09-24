@@ -11,6 +11,8 @@ NK.data = {
     handle: "nikhil",
     role: "Developer & maker",
     location: "Bengaluru → Eindhoven",
+    // What I'm looking for — shown by whoami, contact and the simple view.
+    openTo: "Open to: thesis & internship roles in the Brainport region (AI, robotics, embedded)",
     // The headline. The last line ends with the colon that becomes the pendulum.
     intro: ["Hello World,", "I'm Nikhil"],
     // "swings between" is read just as the lower colon dot starts to swing.
@@ -46,7 +48,9 @@ NK.data = {
   },
 
   experience: [
-    { org: "Motorola Solutions", role: "Backend Automation Intern", when: "Aug 2024 –", where: "Bengaluru",
+    { org: "Mercor", role: "AI Code Evaluation & Agentic Benchmarking (contract)", when: "Dec 2025 –", where: "Remote",
+      what: "Evaluating AI-generated code and building agentic benchmarks for frontier-model training." },
+    { org: "Motorola Solutions", role: "Backend Automation Intern", when: "Aug 2024 – Jul 2025", where: "Bengaluru",
       what: "Go + gRPC job scheduler for remote script execution; Gmail/Drive API audit automation (~80% less manual work); Jenkins-managed jobs; MongoDB metrics ingestion." },
     { org: "Bharat Electronics (BEL)", role: "Intern", when: "Jul – Aug 2024", where: "India",
       what: "Offline document summariser with NLTK + Hugging Face; multi-threading cut run time by 50%." }

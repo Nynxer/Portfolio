@@ -84,6 +84,8 @@ NK.term = (function () {
   // ---------- output helpers ----------
   const R = (cmd, label, cls) => `<button type="button" class="run${cls ? " " + cls : ""}" data-run="${esc(cmd)}">${esc(label == null ? cmd : label)}</button>`;
   const F = (fill, label) => `<button type="button" class="run" data-fill="${esc(fill)}">${esc(label)}</button>`;
+  // one prompt everywhere (hero, input, echoed lines): nikhil@universe:~/path$
+  const PS = () => `<span class="p-user">nikhil@universe</span><span class="p-dim">:</span><span class="c-path">${esc(pathStr(cwd))}</span><span class="p-dim">$</span> `;
   const A = (url, label) => `<a href="${esc(url)}" target="${url.startsWith("mailto:") ? "_self" : "_blank"}" rel="noopener">${esc(label)}</a>`;
   function print(html, cls) {
     const p = document.createElement(/<(ul|div|dl|h\d)/.test(html) ? "div" : "p");
@@ -206,7 +208,7 @@ NK.term = (function () {
 
   def("whoami about", "who is Nikhil?", () => {
     const P = D.person;
-    print(`<h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>`);
+    print(`<h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>${P.openTo ? `<p class="o-body"><span class="w">${esc(P.openTo)}</span></p>` : ""}`);
     print(`<ul class="o-hl">${P.highlights.map(([a, b]) => `<li><b>${esc(a)}</b> — ${esc(b)}</li>`).join("")}</ul>`);
     print(`<div class="o-actions">${R("ls universe", "projects")}${R("experience")}${R("contact")}${A(D.links.resume.url, "résumé ↗")}</div>`);
   });
@@ -220,7 +222,7 @@ NK.term = (function () {
 
   def("contact", "how to reach me", () => {
     const L = D.links;
-    print(`<dl class="kv"><dt>email</dt><dd>${A(L.email.url, L.email.label)}</dd><dt>github</dt><dd>${A(L.github.url, L.github.label)}</dd><dt>linkedin</dt><dd>${A(L.linkedin.url, L.linkedin.label)}</dd><dt>resume</dt><dd>${A(L.resume.url, L.resume.label)}</dd></dl>`);
+    print(`<dl class="kv"><dt>email</dt><dd>${A(L.email.url, L.email.label)}</dd><dt>github</dt><dd>${A(L.github.url, L.github.label)}</dd><dt>linkedin</dt><dd>${A(L.linkedin.url, L.linkedin.label)}</dd><dt>resume</dt><dd>${A(L.resume.url, L.resume.label)}</dd></dl>${D.person.openTo ? `<p class="o-body"><span class="w">${esc(D.person.openTo)}</span></p>` : ""}`);
   });
   def("resume cv", "open my résumé (PDF)", () => run("open resume", { echo: false }));
   def("github gh", "open GitHub", () => run("open github", { echo: false }));
@@ -307,9 +309,9 @@ NK.term = (function () {
       const w = worldBy(cwd[1]), next = worlds[(worlds.indexOf(w) + 1) % worlds.length];
       list = [["cd ..", "← back"], ...w.projects.slice(0, 2).map((p) => ["cat " + p.id, "cat " + p.id]), ["cd ../" + next.id + " && ls", "next world →"]];
     } else {
-      list = [["ls universe", "projects", 1], ["whoami", "about"], ["blog", "blog"], ["contact", "contact"]];
+      list = [["ls universe", "projects", 1], ["whoami", "about"], ["blog", "blog"], ["contact", "contact"], ["simple", "simple view", 0, "m-only"]];
     }
-    chipsEl.innerHTML = list.map(([c, l, h]) => `<button type="button" class="chip${h ? " hl" : ""}" data-type="${esc(c)}" title="runs: ${esc(c)}">${esc(l)}</button>`).join("");
+    chipsEl.innerHTML = list.map(([c, l, h, x]) => `<button type="button" class="chip${h ? " hl" : ""}${x ? " " + x : ""}" data-type="${esc(c)}" title="runs: ${esc(c)}">${esc(l)}</button>`).join("");
   }
 
   const scrim = document.createElement("div");
@@ -340,7 +342,7 @@ NK.term = (function () {
     line = String(line).trim();
     if (!line) return;
     if (opts.echo !== false) {
-      const p = print(`<span class="c-path">${esc(pathStr(cwd))}</span><span class="c-arrow">❯</span>${esc(line)}`, "cmd");
+      const p = print(`${PS()}${esc(line)}`, "cmd");
       open();
       if (opts.history !== false) { if (hist[hist.length - 1] !== line) hist.push(line); if (hist.length > 60) hist.shift(); hi = hist.length; try { localStorage.setItem("nk.hist", JSON.stringify(hist)); } catch (_) {} }
       lastCmd = p; follow();
@@ -382,7 +384,7 @@ NK.term = (function () {
   function type(cmd) {
     if (typing) { clearTimeout(typing); typing = null; }
     out.innerHTML = ""; input.value = ""; updateGhost();
-    const line = print(`<span class="c-path">${esc(pathStr(cwd))}</span><span class="c-arrow">❯</span><span class="typed"></span><span class="tcur" aria-hidden="true"></span>`, "cmd");
+    const line = print(`${PS()}<span class="typed"></span><span class="tcur" aria-hidden="true"></span>`, "cmd");
     lastCmd = line; open();
     if (hist[hist.length - 1] !== cmd) { hist.push(cmd); if (hist.length > 60) hist.shift(); }
     hi = hist.length; try { localStorage.setItem("nk.hist", JSON.stringify(hist)); } catch (_) {}
@@ -451,7 +453,7 @@ NK.term = (function () {
     else if (e.key === "ArrowUp") { if (hist.length) { e.preventDefault(); hi = Math.max(0, hi - 1); input.value = hist[hi] || ""; updateGhost(); } }
     else if (e.key === "ArrowDown") { e.preventDefault(); hi = Math.min(hist.length, hi + 1); input.value = hist[hi] || ""; updateGhost(); }
     else if (e.key === "l" && e.ctrlKey) { e.preventDefault(); out.innerHTML = ""; }
-    else if (e.key === "c" && e.ctrlKey && !window.getSelection().toString()) { e.preventDefault(); print(`<span class="c-path">${esc(pathStr(cwd))}</span><span class="c-arrow">❯</span>${esc(input.value)}^C`, "cmd"); input.value = ""; updateGhost(); }
+    else if (e.key === "c" && e.ctrlKey && !window.getSelection().toString()) { e.preventDefault(); print(`${PS()}${esc(input.value)}^C`, "cmd"); input.value = ""; updateGhost(); }
   });
   out.addEventListener("click", (e) => {
     const f = e.target.closest("[data-fill]");
@@ -471,7 +473,7 @@ NK.term = (function () {
     print(`<span class="dim">start with</span> ${R("ls universe")} <span class="dim">or</span> ${R("whoami")}<span class="dim">. Stuck? </span>${R("help")}`);
   }
 
-  const DEFAULT_STATUS = `<b>Pick a world</b>hover to preview · or type <span class="k">help</span>`;
+  const DEFAULT_STATUS = `# <b>pick a world</b>hover to preview · or type <span class="k">help</span>`;
   function setStatus(html) { status.innerHTML = html || DEFAULT_STATUS; }
   setStatus("");
 

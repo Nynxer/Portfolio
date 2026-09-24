@@ -39,7 +39,7 @@ _Done 24 Sep: items marked [x], plus Zen mode (terminal centred; universe dims, 
 ### Terminal
 - [x] Move it to the bottom centre as a slim, borderless prompt that sits on the grid, with the caption line centred above it.
 - [x] Open it upward into the centred window. Keep the scrim very light.
-- [ ] Put Pause and Replay back as small icons in a corner, so the terminal is the only thing at the bottom centre.
+- [x] Pause and Replay moved next to the logo (v1.2).
 
 ### Content
 - [ ] Real project copy: role, dates, one number per project, a repo or demo link, and one image each.
@@ -47,12 +47,45 @@ _Done 24 Sep: items marked [x], plus Zen mode (terminal centred; universe dims, 
 - [ ] Write the three blog posts (they're placeholders now).
 
 ### Ship it
-- [ ] GitHub repo, then GitHub Pages or Cloudflare Pages, plus a custom domain.
-- [ ] Move `tools/github-workflow-blog.yml` to `.github/workflows/blog.yml`.
+- [x] GitHub repo (Nynxer/Portfolio) and GitHub Pages (nynxer.github.io/Portfolio). Custom domain still to do.
+- [x] Move `tools/github-workflow-blog.yml` to `.github/workflows/`.
 - [ ] Social preview image (og:image), a sitemap, and an RSS feed for the blog.
 - [ ] Put the Simple view's content in the static HTML so search engines and link previews see real text.
 - [ ] Privacy-friendly analytics (GoatCounter or Plausible) to see whether recruiters open the résumé.
 - [ ] Lighthouse and axe pass; screen-reader check with NVDA and VoiceOver.
+
+## v1.2: feedback pass (24 Sep)
+
+### Mobile
+- [x] Optimise for phones (360px header fits, planets shrink instead of sliding under the prompt, compact landscape layout, solid bottom sheet). Still to do: a pass on a real device at 60fps. Original item: layout, tap targets of 44px or more, and the headline and planets sized for 360–430px widths. The terminal becomes a bottom sheet. Test on a real device at 60fps.
+
+### Intro animation
+- [ ] Make it shorter and faster (aim for about 3 s total) and more alive: snappier easing, a pendulum with a bit more energy, less waiting between the typed lines.
+- [ ] As the pendulum starts spinning, slide the 2 "about me" lines in smoothly (transform and opacity only), timed to the swing.
+
+### Logo
+- [x] Redesign the logo using a modern, blocky dot-matrix font (done: Doto, square dots, weight 900, subset to 1.4 KB) (candidates: Doto, DotGothic16, Silkscreen; all OFL, so they can be inlined like JetBrains Mono).
+- [x] Make the "i" orange (the flame colour). It glows softly and is the lamp the torch beam comes from.
+- [x] Put a reload (replay intro) button and a pause/play button right next to the logo. This replaces "Pause and Replay as corner icons".
+
+### Terminal
+- [x] Make it seamless: the "Hello World, I'm Nikhil…" hero is the terminal's first output, not a separate pill window. The prompt sits right under it on the same left edge, and clicking it or typing just continues the session.
+
+### Links
+- [x] GitHub, LinkedIn, Résumé and Email as icons plus links in the header (always visible). The terminal's `contact` / `socials` command prints the same links.
+
+### Content & polish (from review, 24 Sep)
+- [x] Add Mercor (AI code evaluation & agentic benchmarking) as current experience. Started Dec 2025.
+- [x] Fix the Motorola end date (Jul 2025). "Aug 2024 –" reads as still employed.
+- [x] "Open to" line: `person.openTo` in data.js, shown in whoami, contact, the simple view and noscript.
+- [ ] Add a `repo:` URL to each project in data.js. The terminal and simple view already show a "source ↗" / "repo ↗" link when it's set.
+- [ ] Trim to 4 strong worlds: merge Hackathon Hacker into Developer, or give it more projects.
+- [x] Better page title and description, canonical URL, og:url/type/site_name, twitter card.
+- [ ] og:image: 1200×630 hero screenshot at img/og.png, then uncomment the tags in index.html.
+- [x] 404.html ("cd: no such file or directory").
+- [x] README: live URL, blog-sync steps updated.
+- [ ] Serve fonts as cached .woff2 files instead of inline base64 (and subset Doto when it's added).
+- [x] Test at 360px wide and in phone landscape.
 
 ## v2: AI layer (idea stage)
 

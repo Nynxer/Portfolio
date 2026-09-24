@@ -1,5 +1,7 @@
 # Nikhil — portfolio (static, zero dependencies)
 
+**Live:** https://nynxer.github.io/Portfolio/ (GitHub Pages, deployed from `main`; `.nojekyll` keeps files served as-is)
+
 Open `index.html` directly, or serve the folder with anything (`python -m http.server`).
 No build step, no framework, no network requests. ~230 KB total, 57 KB of it the font.
 
@@ -11,10 +13,9 @@ No build step, no framework, no network requests. ~230 KB total, 57 KB of it the
   - Obsidian syntax works: `[[wikilinks]]`, `#tags`, `> [!note] callouts`, `==highlights==`, tasks, tables
   - `blog/templates/post.md` is a starter template (never published)
 
-## GitHub auto-sync (later)
-1. Push this folder to a GitHub repo (GitHub Pages / Netlify / Cloudflare Pages all work).
-2. In Obsidian, install the **Obsidian Git** plugin and sync your notes into `blog/`.
-3. Move `tools/github-workflow-blog.yml` to `.github/workflows/blog.yml` — it rebuilds `js/posts.js` on every push to `blog/**`.
+## Blog auto-sync
+1. In Obsidian, install the **Obsidian Git** plugin and sync your notes into `blog/`.
+2. `.github/workflows/github-workflow-blog.yml` rebuilds `js/posts.js` on every push to `blog/**`, and Pages redeploys.
 
 ## Files
 | file | what |
@@ -24,6 +25,7 @@ No build step, no framework, no network requests. ~230 KB total, 57 KB of it the
 | `js/game.js` + `js/sling-core.js` | Orbit Sling (shake / yank the pendulum, or type `sling`) |
 | `js/blog.js` + `js/markdown.js` | Obsidian-style blog reader |
 | `js/main.js` | wiring, keyboard, simple view, URL hashes |
+| `404.html` | standalone "command not found" page for GitHub Pages |
 | `tests/sling.test.js` | `node tests/sling.test.js` checks every game level is solvable |
 
 ## Deep links
