@@ -6,7 +6,7 @@
   --orange:#FF8A3D; --ember:#FFB27A; --amber:#FFD27A;
   --text-2:#C3D3D8; --text-3:#8FA9B0; --text-4:#6F8F97;
   --line:rgba(143,169,176,.14); --line-2:rgba(233,251,255,.2);
-  --mono:"JetBrains Mono","SF Mono","IBM Plex Mono",ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,"IBM Plex Mono",Consolas,"Liberation Mono",monospace;   /* JetBrains Mono is bundled (css/fonts.css); ui-monospace is SF Mono on Apple devices if it ever fails to load */
   --gutter:clamp(16px,4.4vw,64px);
   --hero-x:clamp(20px,8.3vw,120px);
   --hero-top:clamp(100px,24vh,240px);   /* one left edge for hero, caption, prompt and reading panel */
