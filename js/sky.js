@@ -20,8 +20,8 @@ NK.sky = (function () {
 
   const RGB = { cyan: [95, 243, 255], deep: [44, 138, 154], ice: [233, 251, 255], orange: [255, 138, 61], ember: [255, 178, 122] };
   const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
-  // The third colour ("spice"), used sparingly: cursor, hover, the web's pulse, the hottest tip of the flame.
-  // Set NK.data.accent to "magenta", "lime" or "violet"; the CSS reads the same choice from <html data-accent>.
+  // The third colour ("spice") is for the interface only (cursor, hover, bullets, selection); the fire and the worlds stay orange and cyan.
+  // Set NK.data.accent to "magenta", "lime" or "violet"; the CSS reads the choice from <html data-accent>.
   const ACCENTS = { magenta: [255, 61, 139], lime: [200, 255, 61], violet: [157, 107, 255] };
   document.documentElement.dataset.accent = ACCENTS[D.accent] ? D.accent : "magenta";
   RGB.spice = ACCENTS[document.documentElement.dataset.accent];
@@ -271,7 +271,7 @@ NK.sky = (function () {
       const tx = p.x, ty = p.y + (p.dy || 0);
       for (let k = 0; k < 6; k++) {
         const u = Math.max(0, e - k * 0.045), x = lerp(pend.x, tx, u), y = lerp(pend.y, ty, u), s = 4.2 - k * 0.5;
-        ctx.fillStyle = k === 0 ? rgba(RGB.spice, 1) : rgba(RGB.orange, 0.8 - k * 0.12);
+        ctx.fillStyle = k === 0 ? rgba(RGB.ember, 1) : rgba(RGB.orange, 0.8 - k * 0.12);
         ctx.fillRect(x - s / 2, y - s / 2, s, s);
         if (k === 0) addHeat(x, y, 0.5 * Math.max(fire, 0.5), 0);
       }
@@ -662,7 +662,7 @@ NK.sky = (function () {
   const BUCKETS = [
     [[95, 243, 255], 0.06, 1.3], [[95, 243, 255], 0.12, 1.5], [[95, 243, 255], 0.2, 1.8], [[44, 138, 154], 0.6, 2],
     [[95, 243, 255], 0.5, 2.2], [[95, 243, 255], 0.75, 2.5], [[95, 243, 255], 1, 2.7], [[200, 251, 255], 1, 2.9],
-    [[255, 178, 122], 1, 3.1], [RGB.spice, 1, 3.3]
+    [[255, 178, 122], 1, 3.1], [[255, 138, 61], 1, 3.3]
   ];
   const paths = BUCKETS.map(() => []);
 
@@ -877,7 +877,7 @@ NK.sky = (function () {
         const soft = flying ? 1 : Math.min(1, 0.45 + q / 0.3);                  // at rest the thread emerges softly from the hub
         const wt = Math.max(hot, qp >= 0 ? Math.exp(-(((q - qp) / 0.09) ** 2)) : 0);
         const a = a0 * soft * (flying ? 0.7 : 0.4 + 0.45 * lit);
-        ctx.fillStyle = wt > 0.05 ? rgba(qp >= 0 && wt > hot ? RGB.spice : RGB.ice, Math.min(1, a + wt * 0.8 * a0)) : rgba(lit > 0.3 || flying ? RGB.cyan : RGB.deep, a);
+        ctx.fillStyle = wt > 0.05 ? rgba(RGB.ice, Math.min(1, a + wt * 0.8 * a0)) : rgba(lit > 0.3 || flying ? RGB.cyan : RGB.deep, a);
         const s = 1.4 + wt * 1.2; ctx.fillRect(x - s / 2, y - s / 2, s, s);
       }
     }

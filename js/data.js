@@ -5,7 +5,7 @@
 window.NK = window.NK || {};
 
 NK.data = {
-  // The third colour, used sparingly (cursor, hover, bullets, the hottest tip of the flame): "magenta", "lime" or "violet".
+  // The third colour, used sparingly and only on the interface (cursor, hover, bullets, "Open to:", selection): "magenta", "lime" or "violet".
   accent: "magenta",
   // Intro animation: "carve" (the pendulum cuts each world out of the dot grid) or "classic" (the earlier one:
   // a ring born at the bob that wanders to its place). Either can be played with `replay carve` / `replay classic`.
