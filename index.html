@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Scripts run only from this site. The hash allows the one inline line below (classList.add('js')); change that line and the hash must change too. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-Du+OJKJSbdUgz5nrHeWWINvez6XKDDU/tyj/5c2uvwo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
 <title>Nikhil Kamath — MSc AI &amp; Engineering Systems @ TU/e</title>
 <meta name="description" content="Nikhil Kamath — MSc AI & Engineering Systems student at TU/e, Eindhoven. Go backends, AI & robotics, 3D printing. Open to thesis & internship roles in Brainport.">
 <link rel="canonical" href="https://nynxer.github.io/Portfolio/">
@@ -18,19 +20,31 @@
 <meta name="twitter:card" content="summary_large_image"> -->
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Nikhil Kamath — MSc AI & Engineering Systems @ TU/e">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"WebSite","@id":"https://nynxer.github.io/Portfolio/#site","url":"https://nynxer.github.io/Portfolio/","name":"Nikhil Kamath","inLanguage":"en"},
+{"@type":"Person","@id":"https://nynxer.github.io/Portfolio/#me","name":"Nikhil Kamath","url":"https://nynxer.github.io/Portfolio/","email":"mailto:niskamath@gmail.com",
+"description":"MSc AI & Engineering Systems student at TU/e, Eindhoven. Go backends, AI & robotics, 3D printing.",
+"homeLocation":{"@type":"Place","name":"Eindhoven, Netherlands"},
+"affiliation":{"@type":"CollegeOrUniversity","name":"Eindhoven University of Technology (TU/e)","url":"https://www.tue.nl/"},
+"alumniOf":{"@type":"CollegeOrUniversity","name":"REVA University, Bengaluru"},
+"knowsAbout":["Go","Python","gRPC","Docker","PostgreSQL","MongoDB","Jenkins","OpenCV","YOLO","Linux","Robotics","Computer vision","3D printing","CAD"],
+"sameAs":["https://github.com/Nynxer","https://www.linkedin.com/in/niskamath"]}
+]}
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%2304060A'/%3E%3Cg fill='%235FF3FF'%3E%3Ccircle cx='4' cy='4' r='1.2'/%3E%3Ccircle cx='4' cy='7' r='1.2'/%3E%3Ccircle cx='4' cy='10' r='1.2'/%3E%3Ccircle cx='4' cy='13' r='1.2'/%3E%3Ccircle cx='7' cy='6' r='1.2'/%3E%3Ccircle cx='9' cy='9' r='1.2'/%3E%3Ccircle cx='12' cy='4' r='1.2'/%3E%3Ccircle cx='12' cy='7' r='1.2'/%3E%3Ccircle cx='12' cy='10' r='1.2'/%3E%3Ccircle cx='12' cy='13' r='1.2'/%3E%3C/g%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/fonts.css?v=1.5">
-<link rel="stylesheet" href="css/style.css?v=1.5">
+<link rel="stylesheet" href="css/fonts.css?v=1.6">
+<link rel="stylesheet" href="css/style.css?v=1.6">
 <script>document.documentElement.classList.add('js')</script>
-<script defer src="js/data.js?v=1.5"></script>
-<script defer src="js/posts.js?v=1.5"></script>
-<script defer src="js/markdown.js?v=1.5"></script>
-<script defer src="js/sky.js?v=1.5"></script>
-<script defer src="js/sling-core.js?v=1.5"></script>
-<script defer src="js/game.js?v=1.5"></script>
-<script defer src="js/terminal.js?v=1.5"></script>
-<script defer src="js/blog.js?v=1.5"></script>
-<script defer src="js/main.js?v=1.5"></script>
+<script defer src="js/data.js?v=1.6"></script>
+<script defer src="js/posts.js?v=1.6"></script>
+<script defer src="js/markdown.js?v=1.6"></script>
+<script defer src="js/sky.js?v=1.6"></script>
+<script defer src="js/sling-core.js?v=1.6"></script>
+<script defer src="js/game.js?v=1.6"></script>
+<script defer src="js/terminal.js?v=1.6"></script>
+<script defer src="js/blog.js?v=1.6"></script>
+<script defer src="js/main.js?v=1.6"></script>
 </head>
 <body>
 <a class="skip" href="#term-input">Skip to terminal</a>
@@ -114,8 +128,38 @@
   <div class="nojs">
     <h1>Nikhil Kamath</h1>
     <p>Developer &amp; maker — Go backends, AI &amp; robotics, 3D printing. MSc AI &amp; Engineering Systems at TU/e.</p>
+    <p>Eindhoven, NL · MSc AI &amp; Engineering Systems at TU/e · ex-Motorola Solutions.</p>
     <p>Open to thesis &amp; internship roles in the Brainport region (AI, robotics, embedded).</p>
     <p><a href="mailto:niskamath@gmail.com">niskamath@gmail.com</a> · <a href="https://github.com/Nynxer">GitHub</a> · <a href="https://www.linkedin.com/in/niskamath">LinkedIn</a> · <a href="https://drive.google.com/file/d/1W98bTHA28VhHaj-DHMyxhjsBbndoo_OG/view?usp=sharing">Résumé</a></p>
+    <h2>Highlights</h2>
+    <ul>
+      <li><b>Best Paper</b>: Pluto, an autonomous weed-removing robot</li>
+      <li><b>Motorola Solutions</b>: backend automation in Go + gRPC</li>
+      <li><b>Top 10 of 150+</b> teams at the Pondicherry Hackathon</li>
+    </ul>
+    <h2>Experience</h2>
+    <ul>
+      <li><b>Mercor</b>, AI Code Evaluation &amp; Agentic Benchmarking (contract), Dec 2025 – present, remote. Evaluating AI-generated code and building agentic benchmarks for frontier-model training.</li>
+      <li><b>Motorola Solutions</b>, Backend Automation Intern, Aug 2024 – Jul 2025, Bengaluru. Go + gRPC job scheduler for remote script execution; Gmail/Drive API audit automation (~80% less manual work); Jenkins-managed jobs; MongoDB metrics ingestion.</li>
+      <li><b>Bharat Electronics (BEL)</b>, Intern, Jul – Aug 2024, India. Offline document summariser with NLTK + Hugging Face; multi-threading cut run time by 50%.</li>
+    </ul>
+    <h2>Education</h2>
+    <ul>
+      <li>MSc AI &amp; Engineering Systems, TU/e (Eindhoven University of Technology), 2026 –</li>
+      <li>B.Tech Electronics &amp; Computer Engineering, REVA University, Bengaluru, – 2025</li>
+    </ul>
+    <h2>Projects</h2>
+    <ul>
+      <li><b>Pluto</b>: an autonomous weed-removing robot. Best Paper recognition. (Robotics, computer vision)</li>
+      <li><b>Intelligent Traffic Signals</b>: real-time signal optimisation from camera feeds; Dockerised microservices, 85% vehicle recognition. (Python, YOLOv5, Docker)</li>
+      <li><b>Tasky</b>: task orchestration service that schedules, retries and reports on automated jobs. (Go, PostgreSQL, Docker)</li>
+      <li><b>Go-Sim-Engine</b>: lightweight deterministic simulation engine for stepping physics and agent models. (Go)</li>
+      <li><b>Go-ImagePro</b>: concurrent image-processing pipeline for the command line. (Go)</li>
+      <li><b>Go-ASCII-Streamer</b>: streams live video into the terminal as ASCII. (Go, WebSockets)</li>
+      <li><b>PrintSmithz</b>: my 3D-printing studio, from CAD to shipped part.</li>
+      <li><b>Inkiniki</b>: low-power e-ink display experiments. <b>Home NAS</b>: self-hosted storage on a Raspberry Pi.</li>
+    </ul>
+    <p>Skills: Go, Python, gRPC, Docker, PostgreSQL, MongoDB, Jenkins, OpenCV, YOLO, Linux, CAD, AutoCAD LISP.</p>
   </div>
 </noscript>
 </body>

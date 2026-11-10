@@ -86,6 +86,8 @@ NK.term = (function () {
   const F = (fill, label) => `<button type="button" class="run" data-fill="${esc(fill)}">${esc(label)}</button>`;
   // one prompt everywhere (hero, input, echoed lines): nikhil@universe:~/path$
   const PS = () => `<span class="p-user">nikhil@universe</span><span class="p-dim">:</span><span class="c-path">${esc(pathStr(cwd))}</span><span class="p-dim">$</span> `;
+  // After a click or tap: focus the prompt only where there is a mouse, so phones don't pop the on-screen keyboard.
+  const focusSoft = () => { if (matchMedia("(pointer:fine)").matches) input.focus({ preventScroll: true }); };
   const A = (url, label) => `<a href="${esc(url)}" target="${url.startsWith("mailto:") ? "_self" : "_blank"}" rel="noopener">${esc(label)}</a>`;
   function print(html, cls) {
     const p = document.createElement(/<(ul|div|dl|h\d)/.test(html) ? "div" : "p");
@@ -234,6 +236,12 @@ NK.term = (function () {
   def("github gh", "open GitHub", () => run("open github", { echo: false }));
   def("linkedin", "open LinkedIn", () => run("open linkedin", { echo: false }));
   def("email mail", "write me an email", () => run("open email", { echo: false }));
+  def("hire", "start an email about a role", () => {
+    const subject = "Thesis / internship opportunity (via your portfolio)";
+    text(`opening an email to ${D.links.email.label} …`, "dim");
+    if (D.person.openTo) text(D.person.openTo, "dim");
+    window.open(`${D.links.email.url}?subject=${encodeURIComponent(subject)}`, "_self", "noopener");
+  });
 
   def("clear cls", "clear the screen (ctrl+l)", () => { out.innerHTML = ""; lastCmd = null; window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" }); });
   def("history", "commands you've run", () => text(hist.map((h, i) => `${String(i + 1).padStart(4)}  ${h}`).join("\n") || "(empty)"));
@@ -289,7 +297,7 @@ NK.term = (function () {
           document.body.classList.remove("staged"); input.disabled = false; eggRunning = false;
           setStatus("");
           text("achievement unlocked: root of all evil. (psst — the pendulum is also a toy.)", "dim");
-          open(); input.focus({ preventScroll: true });
+          open(); focusSoft();
         }, 4200);
       }, 420);
     }, 500);
@@ -458,7 +466,7 @@ NK.term = (function () {
     if (f) { input.value = f.dataset.fill; input.focus({ preventScroll: true }); updateGhost(); return; }
     const b = e.target.closest("[data-run]"); if (!b) return;
     type(b.dataset.run);
-    input.focus({ preventScroll: true });
+    focusSoft();
   });
   chipsEl.addEventListener("click", (e) => { const b = e.target.closest("[data-type]"); if (b) type(b.dataset.type); });
   toggle.addEventListener("click", () => {
@@ -478,7 +486,7 @@ NK.term = (function () {
 
   renderChips();
   return {
-    run, type, open, close, isOpen, focus: () => input.focus({ preventScroll: true }), input, motd, setStatus,
+    run, type, open, close, isOpen, focus: () => input.focus({ preventScroll: true }), focusSoft, input, motd, setStatus,
     get cwd() { return cwd.slice(); }, on: (k, f) => (hooks[k] = f), resolveLoose
   };
 })();

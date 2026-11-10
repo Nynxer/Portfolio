@@ -379,7 +379,9 @@ a.wl.unresolved{color:var(--text-3);text-decoration-style:dashed;text-decoration
 .gaming .planet .lbl{opacity:.4}
 .gaming .planet{pointer-events:none}
 
-.nojs{max-width:640px;margin:20vh auto;padding:0 20px}
+.nojs{max-width:640px;margin:12vh auto;padding:0 20px;line-height:1.6}
+.nojs h2{color:var(--white);font-size:1em;margin:1.6em 0 .4em}
+.nojs li{margin:.35em 0}
 .nojs h1{color:var(--white)}
 .js .nojs{display:none}
 

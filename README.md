@@ -7,6 +7,8 @@ No build step, no framework, no network requests. ~230 KB total, 57 KB of it the
 
 ## Edit content
 - **Everything about you / projects:** `js/data.js`
+  - Two hand-kept copies need the same edit: the `<noscript>` block and JSON-LD in `index.html`, and `llms.txt`.
+  - After any CSS/JS change, bump `?v=` on every link in `index.html`.
 - **Blog:** write notes in `blog/` (it's an Obsidian vault folder), then run
   `node tools/build-blog.mjs` → regenerates `js/posts.js`.
   - Frontmatter: `title`, `date`, `tags`, `summary`, `placeholder: true`, `draft: true` (hidden)

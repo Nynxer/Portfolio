@@ -89,7 +89,7 @@
   $("#btn-simple").addEventListener("click", () => showSimple(true));
 
   // ---------- nav + planets route through the terminal ----------
-  document.querySelectorAll("[data-cmd]").forEach((b) => b.addEventListener("click", () => { term.type(b.dataset.cmd); term.focus(); }));
+  document.querySelectorAll("[data-cmd]").forEach((b) => b.addEventListener("click", () => { term.type(b.dataset.cmd); term.focusSoft(); }));
   let planetOpener = null;
   // Click a world: it bursts into embers first, then the terminal opens on a clean screen.
   sky.on("open", (w) => {
@@ -97,7 +97,7 @@
     sky.burst(D.worlds.indexOf(w));
     // desktop: the panel opens beside the worlds, so the burst stays in view; phones: let it play first
     const wait = matchMedia("(max-width:760px)").matches ? 700 : 260;
-    setTimeout(() => { term.type(`cd ~/universe/${w.id} && ls`); term.focus(); }, wait);
+    setTimeout(() => { term.type(`cd ~/universe/${w.id} && ls`); term.focusSoft(); }, wait);
   });
   sky.on("hover", (w) => {
     term.setStatus(w ? `<b>${esc(w.name)}</b>${esc(w.tagline)} <span class="dim"> · </span><span class="k">cd ${esc(w.id)}</span>` : "");
@@ -195,7 +195,8 @@
   }
   function route() {
     if (hashLock) return false;
-    const h = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+    let h = "";
+    try { h = decodeURIComponent(location.hash.replace(/^#\/?/, "")); } catch (_) { return false; }   // a stray "%" in a link
     if (!h) return false;
     if (h === "simple") { showSimple(true); return true; }
     if (h === "sling") { game.start("terminal"); return true; }

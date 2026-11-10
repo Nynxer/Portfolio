@@ -7,16 +7,19 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const slugify = (s) => String(s).toLowerCase().trim().replace(/\.md$/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+  // Addresses with a scheme are allowed only for http(s) and mailto; "#", "/" and relative paths have no scheme.
+  const safeUrl = (u) => !/^[a-z][a-z0-9+.-]*:/i.test(u) || /^(https?|mailto):/i.test(u);
+
   function inline(s, ctx) {
     const codes = [];
     s = s.replace(/`([^`]+)`/g, (_, c) => { codes.push(`<code>${esc(c)}</code>`); return `\u0000${codes.length - 1}\u0000`; });
     s = esc(s);
-    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_, a, u) => `<img src="${u}" alt="${a}" loading="lazy">`);
+    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_, a, u) => (safeUrl(u) ? `<img src="${u}" alt="${a}" loading="lazy">` : a));
     s = s.replace(/\[\[([^\]|#]+)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g, (_, t, h, l) => {
       const slug = slugify(t), ok = !ctx || !ctx.exists || ctx.exists(slug);
       return `<a class="wl${ok ? "" : " unresolved"}" href="#/blog/${slug}" data-post="${slug}">${l || t}</a>`;
     });
-    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => `<a href="${u}"${/^https?:/.test(u) ? ' target="_blank" rel="noopener"' : ""}>${t}</a>`);
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => (safeUrl(u) ? `<a href="${u}"${/^https?:/i.test(u) ? ' target="_blank" rel="noopener"' : ""}>${t}</a>` : t));
     s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
     s = s.replace(/==([^=]+)==/g, "<mark>$1</mark>").replace(/~~([^~]+)~~/g, "<del>$1</del>");
     s = s.replace(/(^|\s)#([a-zA-Z][\w/-]*)/g, (_, pre, t) => `${pre}<a class="tag" href="#/blog/tag/${t}" data-tag="${t}">#${t}</a>`);

@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.6 (10 Nov 2026)
+- Security: a Content Security Policy (scripts run only from this site); blog links and images accept only http(s), mailto, # and relative addresses; the blog workflow's Actions are pinned to commit IDs
+- Fix: a link with a stray `%` in its hash no longer breaks the page
+- Phones: tapping a world, a nav button or a link in the output no longer opens the on-screen keyboard
+- Search: JSON-LD (Person, WebSite), `robots.txt`, `sitemap.xml`, and `llms.txt` (plain-text summary for AI agents)
+- Without JavaScript the page now shows highlights, experience, education and projects
+- New command: `hire` starts an email with the subject filled in
+
 ## v1.5 (24 Sep 2026)
 - Fix: with the OS "reduce motion" setting on, the bio lines popped in and the pendulum froze after the intro. The lines now glide apart (480ms, soft fade) and the pendulum swings and settles
 

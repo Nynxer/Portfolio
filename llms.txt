@@ -1,0 +1,43 @@
+# Nikhil Kamath
+
+> MSc AI & Engineering Systems student at TU/e (Eindhoven University of Technology), Eindhoven, NL. Developer and maker: Go backends, AI and robotics, 3D printing. Open to thesis and internship roles in the Brainport region (AI, robotics, embedded).
+
+This site is a terminal-style portfolio rendered with JavaScript. This file is the same content as plain text. Source of truth: js/data.js.
+
+## Contact
+- Email: niskamath@gmail.com
+- GitHub: https://github.com/Nynxer
+- LinkedIn: https://www.linkedin.com/in/niskamath
+- Résumé (PDF): https://drive.google.com/file/d/1W98bTHA28VhHaj-DHMyxhjsBbndoo_OG/view?usp=sharing
+
+## Highlights
+- Best Paper: Pluto, an autonomous weed-removing robot
+- Motorola Solutions: backend automation in Go + gRPC
+- Top 10 of 150+ teams at the Pondicherry Hackathon
+
+## Experience
+- Mercor, AI Code Evaluation & Agentic Benchmarking (contract), Dec 2025 – present, remote. Evaluating AI-generated code and building agentic benchmarks for frontier-model training.
+- Motorola Solutions, Backend Automation Intern, Aug 2024 – Jul 2025, Bengaluru. Go + gRPC job scheduler for remote script execution; Gmail/Drive API audit automation (~80% less manual work); Jenkins-managed jobs; MongoDB metrics ingestion.
+- Bharat Electronics (BEL), Intern, Jul – Aug 2024, India. Offline document summariser with NLTK + Hugging Face; multi-threading cut run time by 50%.
+
+## Education
+- MSc AI & Engineering Systems, TU/e, Eindhoven, 2026 –
+- B.Tech Electronics & Computer Engineering, REVA University, Bengaluru, – 2025
+
+## Skills
+Go, Python, gRPC, Docker, PostgreSQL, MongoDB, Jenkins, OpenCV, YOLO, Linux, CAD, AutoCAD LISP
+
+## Projects
+- Pluto (AI & Robotics): an autonomous weed-removing robot. Best Paper recognition. Robotics, computer vision.
+- Intelligent Traffic Signals (hackathon): real-time signal optimisation from camera feeds; Dockerised microservices, 85% vehicle recognition. Python, YOLOv5, Docker.
+- Tasky: task orchestration service that schedules, retries and reports on automated jobs. Go, PostgreSQL, Docker.
+- Go-Sim-Engine: lightweight deterministic simulation engine for stepping physics and agent models. Go.
+- Go-ImagePro: concurrent image-processing pipeline (resize, filter, convert) for the command line. Go.
+- Go-ASCII-Streamer: streams live video into the terminal as ASCII, frame by frame. Go, WebSockets.
+- PrintSmithz: 3D-printing studio; custom parts and prototypes, from CAD to shipped part.
+- Inkiniki: low-power e-ink display experiments. Embedded.
+- Home NAS: self-hosted network storage on a Raspberry Pi. Linux.
+
+## Pages
+- [Simple view (one page, no animation)](https://nynxer.github.io/Portfolio/#/simple)
+- [Blog](https://nynxer.github.io/Portfolio/#/blog)
