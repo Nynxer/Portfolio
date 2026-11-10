@@ -67,15 +67,17 @@ NK.sky = (function () {
   const RING_STILL = [[-58, 0.92, 1.0], [65, 0.9, 0.76], [128, 0.9, 0.8], [-125, 0.9, 0.8], [5, 0.94, 0.62]];   // short windows: no orbit, sector below the hub kept free
   // The orbit: uneven spacing (never a neat pentagon), each world on its own distance.
   const RING = [[-52, 0.96, 1.0], [28, 0.86, 0.72], [95, 0.98, 0.8], [161, 0.88, 0.76], [228, 0.97, 0.62]];
-  const orbit = { a: 0, v: 0 };                 // a = how far the system has turned (deg); v = 0–1, eases to 0 when it should hold still
+  // a = how far the system has turned (deg); v = 0–1, eases to 0 when it should hold still; t = its own clock, which runs at speed v,
+  // so the turning and each world's drift slow down and pick up together; hold = keep still until this time (set by a click)
+  const orbit = { a: 0, v: 0, t: 0, hold: 0 };
   const orbiting = () => !tall() && H >= 560;
   let stageC = null;                            // the stage, cached by measure() so the frame loop never reads layout
   // Where world i is right now: its place on the orbit, a little wander of its own, slightly bigger and brighter at the front.
   function orbitPos(i, s) {
     const g = RING[i % RING.length], hw = (s.x1 - s.x0) / 2, hh = (s.y1 - s.y0) / 2;
     const R0 = Math.max(44, Math.min(hw * 0.27, hh * 0.3, 104) * g[2]), ph = i * 2.4;
-    const a = (g[0] - orbit.a) * Math.PI / 180 + 0.085 * Math.sin(t * 0.21 + ph);          // ± 5° ahead and behind
-    const d = g[1] * (1 + 0.03 * Math.sin(t * 0.33 + ph * 1.7));                            // a little in and out
+    const a = (g[0] - orbit.a) * Math.PI / 180 + 0.085 * Math.sin(orbit.t * 0.21 + ph);          // ± 5° ahead and behind
+    const d = g[1] * (1 + 0.03 * Math.sin(orbit.t * 0.33 + ph * 1.7));                            // a little in and out
     const z = -Math.cos(a);                                                                 // +1 at the front (bottom), −1 at the back (top)
     let x = s.hx + Math.sin(a) * d * (hw - R0 * 1.06 - 6), y = s.hy - Math.cos(a) * d * (hh - R0 * 1.06 - 6);
     if (ptr.v > 0.01) { const k = (0.6 + 0.4 * z) * ptr.v; x += clamp((s.hx - ptr.x) * 0.012, -5, 5) * k; y += clamp((s.hy - ptr.y) * 0.012, -5, 5) * k; }   // parallax against the mouse
@@ -162,7 +164,7 @@ NK.sky = (function () {
       const p = { w, i, el: b, x: 0, y: 0, R: 60, sx: 0, sy: 0, sR: 60, tx: null, ty: null, tR: null, scale: 0, born: false, lit: 0, gone: false, fly: null, dots: [], phase: i * 1.7 };
       b.addEventListener("pointerenter", () => setHover(i));
       b.addEventListener("pointerleave", () => setHover(-1));
-      b.addEventListener("focus", () => setHover(i));
+      b.addEventListener("focus", () => { if (b.matches(":focus-visible")) setHover(i); });      // keyboard focus lights a world; a mouse click's focus doesn't hold it lit
       b.addEventListener("blur", () => setHover(-1));
       b.addEventListener("click", () => emit("open", w));
       return p;
@@ -262,6 +264,8 @@ NK.sky = (function () {
   function ignite(i) {
     const p = planets[i];
     if (!p || p.gone) return;
+    // Keep the orbit still from the click until the world has burst (after that it stays still because a world is open).
+    orbit.hold = t + 0.6;
     if (!pend.visible || mode !== "idle" || matchMedia("(prefers-reduced-motion: reduce)").matches) return burst(i);
     darts.push({ i, t0: t, dur: 0.2 }); kick();
   }
@@ -401,7 +405,7 @@ NK.sky = (function () {
     caret.style.height = h + "px"; const cp = Math.max(4.5, fs * 0.058), cd = Math.max(3, cp * 0.62);   // a thin column of dots at the dot-matrix pitch (two columns beside the big headline)
     caret.style.setProperty("--cp", cp.toFixed(2) + "px"); caret.style.setProperty("--cd", cd.toFixed(2) + "px");
     caret.style.width = (fs > 28 ? cp + cd : cd).toFixed(2) + "px";
-    caret.style.transform = `translate(${x - u.left + 3}px, ${y - u.top - h / 2}px)`;
+    caret.style.transform = `translate(${x - u.left + Math.max(3, fs * 0.08)}px, ${y - u.top - h / 2}px)`;
   }
 
   function script() {
@@ -662,7 +666,8 @@ NK.sky = (function () {
   const BUCKETS = [
     [[95, 243, 255], 0.06, 1.3], [[95, 243, 255], 0.12, 1.5], [[95, 243, 255], 0.2, 1.8], [[44, 138, 154], 0.6, 2],
     [[95, 243, 255], 0.5, 2.2], [[95, 243, 255], 0.75, 2.5], [[95, 243, 255], 1, 2.7], [[200, 251, 255], 1, 2.9],
-    [[255, 178, 122], 1, 3.1], [[255, 138, 61], 1, 3.3]
+    [[255, 178, 122], 1, 3.1], [[255, 138, 61], 1, 3.3],
+    [RGB.spice, 1, 3.3]                           // only the hottest dot or two, right at the bob (see drawGrid)
   ];
   const paths = BUCKETS.map(() => []);
 
@@ -715,7 +720,7 @@ NK.sky = (function () {
           const d = Math.hypot(x - h.x, y - h.y);
           if (d < h.R + 10) { if (d < h.front) v = 0; const z = (d - h.front) / 7; if (z > -1.5 && z < 1.5) v += 0.5 * h.glow * Math.exp(-z * z); }
         }
-        if (v >= 0.05) paths[Math.min(9, (v * 10) | 0)].push(x, y);
+        if (v >= 0.05) paths[heat[k] >= 0.88 && Math.abs(x - pend.x) < cell * 2.5 && Math.abs(y - pend.y) < cell * 3.5 ? 10 : Math.min(9, (v * 10) | 0)].push(x, y);
       }
     }
     flush();
@@ -910,7 +915,9 @@ NK.sky = (function () {
     // bob: a small dot cluster + faint halo
     ctx.fillStyle = rgba(RGB.orange, 0.14 + ch * 0.2);
     ctx.beginPath(); ctx.arc(pend.x, pend.y, r + 7 + ch * 8, 0, TAU); ctx.fill();
-    ctx.fillStyle = "#ff8a3d"; ctx.shadowColor = "#ff8a3d"; ctx.shadowBlur = 16;
+    const k = pend.leaping ? clamp(fuse.q * 1.4, 0, 1) : 1, S = RGB.spice, O = RGB.orange;
+    const bc = `rgb(${S[0] + (O[0] - S[0]) * k | 0},${S[1] + (O[1] - S[1]) * k | 0},${S[2] + (O[2] - S[2]) * k | 0})`;
+    ctx.fillStyle = bc; ctx.shadowColor = bc; ctx.shadowBlur = 16;
     ctx.beginPath(); ctx.arc(pend.x, pend.y, r + 0.8, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
   }
 
@@ -933,7 +940,7 @@ NK.sky = (function () {
     return mode === "intro" || mode === "game" || Math.abs(beam.v - (hover >= 0 || pinned >= 0 ? 1 : 0)) > 0.01 || pend.grabbed || sparks.length || heatAny || rings.some((r) => t - r.t0 < r.life) ||
       planets.some((p) => p.fly || p.burst || Math.abs(p.lit - target(p)) > 0.01 || (p.born && !p.gone && p.scale < 0.999) || (p.gone && p.scale > 0.01) || p.tx != null) ||
       (!pend.scripted && Math.hypot(pend.vx, pend.vy) > 3) ||
-      cuts.length > 0 || holes.length > 0 || darts.length > 0 || Math.abs(orbit.v - (orbiting() && motion && mode === "idle" && hover < 0 && pinned < 0 ? 1 : 0)) > 0.02 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
+      cuts.length > 0 || holes.length > 0 || darts.length > 0 || Math.abs(orbit.v - (orbiting() && motion && mode === "idle" && hover < 0 && pinned < 0 && t >= orbit.hold && !planets.some((p) => p.gone) ? 1 : 0)) > 0.02 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
       Math.abs(ptr.v - (ptr.on ? 1 : 0)) > 0.01 || (ptr.on && performance.now() - ptr.last < 400);   // full frame rate while the mouse moves
   }
   const target = (p) => (mode === "game" ? 0 : hover === p.i || pinned === p.i ? 1 : 0);
@@ -1002,12 +1009,13 @@ NK.sky = (function () {
     if (lit !== lampLit && logoEl) { lampLit = lit; logoEl.classList.toggle("lit", lit); }
     beam.v += ((want >= 0 ? 1 : 0) - beam.v) * Math.min(1, dt * 9);
     ptr.v += ((ptr.on ? 1 : 0) - ptr.v) * Math.min(1, dt * (ptr.on ? 12 : 5));
-    // the orbit holds still while you aim at a world, while one is open, during the game and when motion is paused
-    const live = orbiting() && !!stageC;
-    const go = live && motion && (mode === "idle" || mode === "intro") && hover < 0 && pinned < 0 && !pend.grabbed ? 1 : 0;
-    orbit.v += (go - orbit.v) * Math.min(1, dt * 6);
+    // the orbit holds still while you aim at a world, while one is open (burst and not yet regrown), during the game and when motion is paused
+    const live = orbiting() && !!stageC, open = planets.some((p) => p.gone);
+    const go = live && motion && (mode === "idle" || mode === "intro") && hover < 0 && pinned < 0 && !open && !pend.grabbed && t >= orbit.hold ? 1 : 0;
+    orbit.v += (go - orbit.v) * Math.min(1, dt * (go ? 2 : 6));       // brakes in about half a second, picks up again over a second and a half
     if (live) {
       orbit.a = (orbit.a + orbit.v * 1.5 * dt) % 360;                 // one turn in about four minutes
+      orbit.t += orbit.v * dt;
       for (const p of planets) { const o = orbitPos(p.i, stageC); p.sx = o.x; p.sy = o.y; p.sR = o.R; p.z = o.z; }
     }
     for (let k = darts.length - 1; k >= 0; k--) if (t - darts[k].t0 >= darts[k].dur) { burst(darts[k].i); darts.splice(k, 1); }

@@ -122,7 +122,7 @@ body:not(.bio-on) .spark{transform:translateY(calc(var(--gap,0px) / -2))}
 .spark{margin:clamp(28px,4.4vh,44px) 0 0;font-size:clamp(16px,1.5vw,22px);line-height:1.4;color:var(--text-3);white-space:nowrap;min-height:1.4em}
 .colon{display:inline-block;position:relative;width:.55em;height:1em;vertical-align:-.14em;margin-left:.12em;opacity:0;transition:opacity .2s}
 .colon.on{opacity:1}
-.colon i{position:absolute;left:.12em;width:.24em;height:.24em;border-radius:50%;background:var(--orange);box-shadow:0 0 10px rgba(255,138,61,.7)}
+.colon i{position:absolute;left:.12em;width:.24em;height:.24em;border-radius:50%;background:var(--spice);box-shadow:0 0 10px var(--spice)}   /* the colon carries the accent; its spark turns orange on the way to the fire */
 .c-top{top:.18em}.c-bot{top:.66em;transition:opacity .15s}
 .colon.swinging .c-bot{opacity:0}
 .caret{position:absolute;z-index:4;left:0;top:0;width:2px;height:40px;background:var(--cyan);box-shadow:0 0 12px rgba(95,243,255,.7);border-radius:1px;transition:transform .09s var(--ease-out),height .15s,opacity .3s;opacity:0}
@@ -182,9 +182,9 @@ body.staged .term-status{display:block!important;font-size:13px}
 .term-ps .c-path,.ln.cmd .c-path{color:var(--cyan)}
 .term-ps .c-path{font-weight:400}
 /* One thin bar cursor everywhere: it stays visible while typing and follows the caret (placeCur in terminal.js). */
-.term-cur{position:absolute;left:-1px;top:50%;width:3px;height:18px;margin-top:-9px;pointer-events:none;animation:cur 1.15s linear infinite}
+.term-cur{position:absolute;left:0;top:50%;width:3px;height:18px;margin-top:-9px;pointer-events:none;animation:cur 1.15s linear infinite}
 #term-input:disabled+.term-cur{display:none}
-#term-input:placeholder-shown{text-indent:10px}
+#term-input:placeholder-shown{text-indent:12px}
 .term-field{position:relative;flex:1;min-width:0}
 #term-input,.term-ghost{font:400 14px/1.4 var(--mono);padding:6px 0}
 #term-input{width:100%;background:transparent;border:0;outline:0;color:var(--white);caret-color:transparent}
@@ -256,7 +256,7 @@ body.scrolled .top::before{opacity:1}
 .o-rows .run:hover{color:var(--spice)}
 .o-rows p{margin:4px 0 0;color:var(--text-3);font-size:13px;line-height:1.6}
 .o-rows .g{font-size:11px;letter-spacing:.08em;color:var(--cyan);text-align:right;max-width:200px}
-.tcur{display:inline-block;width:3px;height:18px;margin-left:3px;vertical-align:-4px}
+.tcur{display:inline-block;width:3px;height:18px;margin-left:5px;vertical-align:-4px}
 .fadein{animation:fin .22s var(--ease-out) both}
 @keyframes fin{from{opacity:0;transform:translateY(4px)}}
 .kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 24px;margin:4px 0}

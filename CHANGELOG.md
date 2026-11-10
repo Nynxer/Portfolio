@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.9.1 (10 Nov 2026)
+- Fix: the orbit no longer starts and brakes again when a world bursts. It holds still from the click, stays still while a world is open, and picks up gently when it closes; the turning and each world's drift now ease together
+- Fix: a mouse click's focus no longer keeps a world lit; keyboard focus still does
+- The colon is in the accent colour, and its spark turns orange on the way to the hub; one or two dots at the core of the flame carry the accent
+- The cursor sits clear of the text: 2 px in the prompt, more beside the headline
+
 ## v1.9 (10 Nov 2026)
 - Desktop: the worlds revolve slowly round the pendulum (about four minutes a turn), unevenly spaced and each with a little wander; slightly larger and brighter at the front, with a few pixels of parallax against the mouse. The orbit holds still while a world is hovered or open
 - Birth: the loops are clearly different sizes again, so the cut rings are concentric; discs spiral outward into orbit and no longer fall (phones unchanged)

@@ -440,7 +440,7 @@ NK.term = (function () {
     const m = placeCur.m || (placeCur.m = document.createElement("canvas").getContext("2d")), cs = getComputedStyle(input);
     m.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
     const w = m.measureText("0").width || 8.4, i = input.selectionDirection === "backward" ? input.selectionStart : input.selectionEnd;
-    el.style.transform = `translateX(${(i * w - input.scrollLeft).toFixed(1)}px)`;
+    el.style.transform = `translateX(${(i * w - input.scrollLeft + 2).toFixed(1)}px)`;      // 2px clear of the last character
   }
   function updateGhost() {
     placeCur();
