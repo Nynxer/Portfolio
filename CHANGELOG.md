@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.9 (10 Nov 2026)
+- Desktop: the worlds revolve slowly round the pendulum (about four minutes a turn), unevenly spaced and each with a little wander; slightly larger and brighter at the front, with a few pixels of parallax against the mouse. The orbit holds still while a world is hovered or open
+- Birth: the loops are clearly different sizes again, so the cut rings are concentric; discs spiral outward into orbit and no longer fall (phones unchanged)
+- The beam now comes from the pendulum's flame; clicking a world sends an ember from the flame to it before it bursts
+- Terminal: older output dims to about a third, so only the latest command is in focus; hover or tab into a block to read it again
+- Cursor: a thin column of square dots with a phosphor-style blink
+- A third colour (hot magenta) on the interface only: cursor, hovered links, bullets, the "Open to:" label, selection. `accent` in `js/data.js` switches it to lime or violet
+
 ## v1.8 (10 Nov 2026)
 - Layout: the colon's spark swings across to a hub at the centre of the worlds and the pendulum hangs there. The worlds sit in a ring round it, cut at the hub and flung outward; a faint thread links the colon to the hub. Text stays left, worlds right
 - Desktop: the pendulum and worlds stay in view while the terminal log scrolls
