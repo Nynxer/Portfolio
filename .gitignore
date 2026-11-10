@@ -8,3 +8,5 @@ desktop.ini
 blog/.obsidian/workspace*.json
 blog/.trash/
 node_modules/
+# Planning docs live outside the public repo
+BACKLOG.md
