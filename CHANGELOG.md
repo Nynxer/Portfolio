@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.7 (10 Nov 2026)
+- New intro ("carve"): the pendulum winds up and loops around the colon in shrinking, quickening circles; the dots inside each loop light up, the disc comes loose, falls, and a thread from the colon slings it to its place. The threads stay as a faint web (desktop) and one pulse runs along them when the last world lands
+- The earlier intro is kept: `replay classic` in the terminal, or `intro: "classic"` in `js/data.js`. `introOrder` picks big-first or small-first loops
+- One block cursor everywhere: it follows the typing position in the prompt and is drawn in dots beside the headline
+- The visitor's own mouse pointer is back; the dot grid glows under it instead. The dot-matrix pointer images remain behind `class="cur-custom"` on `<html>`
+- Smoother planets: 12 shimmer steps instead of 5, eased regrow, full frame rate while the mouse moves
+- Fix: the typing caret no longer lingers over the colon while the worlds are born
+
 ## v1.6 (10 Nov 2026)
 - Security: a Content Security Policy (scripts run only from this site); blog links and images accept only http(s), mailto, # and relative addresses; the blog workflow's Actions are pinned to commit IDs
 - Fix: a link with a stray `%` in its hash no longer breaks the page
