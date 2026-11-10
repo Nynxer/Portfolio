@@ -26,16 +26,16 @@ NK.game = (function () {
   function fit() {
     const { W, H } = sky.size, rot = portrait();
     const vw = rot ? S.VH : S.VW, vh = rot ? S.VW : S.VH;
-    const padT = rot ? 110 : 90, padB = rot ? 70 : 60, padX = 16;
+    const padT = rot ? 176 : 90, padB = rot ? 36 : 60, padX = 16;      // portrait: the help text sits at the top, the sling at the bottom
     const s = Math.min((W - padX * 2) / vw, (H - padT - padB) / vh);
     map = { s, rot, ox: (W - vw * s) / 2, oy: padT + (H - padT - padB - vh * s) / 2 };
   }
   function toScreen(x, y) {
-    if (map.rot) { const X = S.VH - y, Y = x; return [map.ox + X * map.s, map.oy + Y * map.s]; }
+    if (map.rot) return [map.ox + y * map.s, map.oy + (S.VW - x) * map.s];   // portrait: turned so the sling is at the bottom and you shoot upward
     return [map.ox + x * map.s, map.oy + y * map.s];
   }
   function toVirtualVec(dx, dy) { // screen delta → virtual delta
-    if (map.rot) return [dy / map.s, -dx / map.s];
+    if (map.rot) return [-dy / map.s, dx / map.s];
     return [dx / map.s, dy / map.s];
   }
 
@@ -58,7 +58,7 @@ NK.game = (function () {
     hudTop.innerHTML = `Orbit sling · level <b>${lvlI + 1}</b>/${S.LEVELS.length} · ${lvl().name} · shots <b>${shots}</b>`;
     const touch = matchMedia("(pointer:coarse)").matches;
     hudHelp.textContent = touch
-      ? "drag anywhere and pull back to aim · let go to launch · tap ✕ top-right to quit"
+      ? "pull back to aim, let go to launch"
       : "drag & pull back to aim — or ← → aim · ↑ ↓ power · space launch · r restart · esc quit";
   }
   function say(html, ms) { hudMsg.innerHTML = html; msgT = ms ? performance.now() + ms : 0; }
@@ -69,6 +69,9 @@ NK.game = (function () {
     from = { x: sky.pend.x, y: sky.pend.y };
     enterT = performance.now();
     document.body.classList.add("gaming");
+    // lock the page while playing: no scrolling, pull-to-refresh or pinch; the board is pinned to the screen (see .gaming in the CSS)
+    document.documentElement.classList.add("gaming"); window.scrollTo(0, 0); sky.layout();
+    [0, 250, 700].forEach((ms) => setTimeout(() => { if (on) window.scrollTo(0, 0); }, ms));      // the terminal may still be scrolling to its last line
     hud.hidden = false;
     sky.mode = "game"; sky.hidePendulum(); sky.setHover(-1);
     fit(); placePlanets(); setHud();
@@ -96,6 +99,7 @@ NK.game = (function () {
     if (!on) return;
     on = false; st = "off"; comet = null; drag = null;
     document.body.classList.remove("gaming", "aiming");
+    document.documentElement.classList.remove("gaming"); sky.layout();
     hud.hidden = true; hudMsg.textContent = "";
     if (quitBtn) { quitBtn.remove(); quitBtn = null; }
     window.removeEventListener("pointerdown", pDown, true);
@@ -168,7 +172,7 @@ NK.game = (function () {
     if (k === "r" || k === "R") { st = "aim"; comet = null; say("Reset. Take your time.", 1200); return true; }
     if (st !== "aim") return ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(k);
     const fine = e.shiftKey ? 0.25 : 1;
-    const rotSign = map.rot ? -1 : 1;
+    const rotSign = 1;
     if (k === "ArrowLeft") angle -= 0.035 * fine * rotSign;
     else if (k === "ArrowRight") angle += 0.035 * fine * rotSign;
     else if (k === "ArrowUp") power = Math.min(1, power + 0.04 * fine);

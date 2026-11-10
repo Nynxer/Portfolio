@@ -323,7 +323,7 @@ NK.term = (function () {
       const w = worldBy(cwd[1]), next = worlds[(worlds.indexOf(w) + 1) % worlds.length];
       list = [["cd ..", "← back"], ...w.projects.slice(0, 2).map((p) => ["cat " + p.id, "cat " + p.id]), ["cd ../" + next.id + " && ls", "next world →"]];
     } else {
-      list = [["ls universe", "projects", 1], ["whoami", "about"], ["blog", "blog"], ["contact", "contact"], ["simple", "simple view", 0, "m-only"]];
+      list = [["ls universe", "projects", 1], ["whoami", "about"], ["blog", "blog"], ["contact", "contact"], ["simple", "simple", 0, "m-only"]];
     }
     chipsEl.innerHTML = list.map(([c, l, h, x]) => `<button type="button" class="chip${h ? " hl" : ""}${x ? " " + x : ""}" data-type="${esc(c)}" title="runs: ${esc(c)}">${esc(l)}</button>`).join("");
   }
@@ -434,9 +434,7 @@ NK.term = (function () {
     const m = placeCur.m || (placeCur.m = document.createElement("canvas").getContext("2d")), cs = getComputedStyle(input);
     m.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
     const w = m.measureText("0").width || 8.4, i = input.selectionDirection === "backward" ? input.selectionStart : input.selectionEnd;
-    el.style.width = w.toFixed(2) + "px";
     el.style.transform = `translateX(${(i * w - input.scrollLeft).toFixed(1)}px)`;
-    el.classList.toggle("mid", i < input.value.length);
   }
   function updateGhost() {
     placeCur();

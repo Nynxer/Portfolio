@@ -31,7 +31,7 @@ NK.sky = (function () {
   let mode = "boot";              // boot | intro | idle | game
   let fire = 0.7;                  // heat intensity of trails/bursts (spec "fire" tweak)
   const mobile = () => W <= 760;
-  const tall = () => W <= 760 || H > W * 1.1;
+  const tall = () => W <= 760 || vh > W * 1.1;
   const low = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.connection && navigator.connection.saveData);
 
   const pivot = { x: 200, y: 400 }, lamp = { x: 90, y: 50 };
@@ -47,43 +47,55 @@ NK.sky = (function () {
   const cuts = [];                 // cut lines the bob leaves: { x, y, R, a0, a1, closed }
   const holes = [];                // where a disc was cut out of the grid: { x, y, R, t0, dur }
   const web = { pulse: -9 };       // one pulse runs out along the threads when the last world settles
+  const fuse = { q: 0, a: 0 };     // the thread from the colon to the hub: q = how much is paid out (0–1), a = its visibility
   const ptr = { x: -999, y: -999, v: 0, on: false, last: 0 };   // mouse position: the grid glows under it
   const listeners = {};
   const emit = (e, d) => (listeners[e] || []).forEach((f) => f(d));
 
   // ---------- layout ----------
-  const SLOTS_WIDE = [[0.22, 0.30, 1.0], [0.82, 0.10, 0.70], [0.86, 0.64, 0.78], [0.30, 0.92, 0.80], [0.56, 0.60, 0.56]];
-  // tall screens: a tidy 2-2-1 grid, equal sizes (alignment beats variety on a phone)
-  const SLOTS_TALL = [[0.25, 0.1, 1], [0.75, 0.1, 1], [0.25, 0.53, 1], [0.75, 0.53, 1], [0.5, 0.96, 1]];
-
+  // The colon in the text is the anchor (where the spark starts). The pendulum hangs from the hub: the centre of the
+  // worlds' area on wide screens, the centre line under the hero on tall ones. `pivot` is the hub.
+  const anchor = { x: 200, y: 400 };
+  let vh = 800;                                 // viewport height (the universe can be taller than it on short phones)
+  // wide: worlds in a ring round the hub — [angle from straight up (deg, clockwise), distance (0–1 of the room), size]
+  // the sector below the hub stays free for the pendulum
+  const RING = [[-58, 0.92, 1.0], [65, 0.9, 0.76], [128, 0.9, 0.8], [-125, 0.9, 0.8], [5, 0.94, 0.62]];
+  function stage() {
+    const hero = $(".hero").getBoundingClientRect(), u = uni.getBoundingClientRect();
+    if (!tall()) {
+      const x0 = Math.max(W * 0.54, hero.right - u.left + 40), x1 = W - Math.max(40, W * 0.045);
+      let y0 = 96, y1 = H - 64;
+      if (H < 560) { y0 = 60; y1 = H - 14; }
+      return { x0, x1, y0, y1, hx: (x0 + x1) / 2, hy: y0 + (y1 - y0) * 0.44 };
+    }
+    const x0 = mobile() ? 16 : W * 0.12, y0 = hero.bottom - u.top + (mobile() ? 26 : 44);
+    return { x0, x1: W - x0, y0, y1: H, hx: W / 2, hy: y0 };
+  }
   function measure() {
     const u = uni.getBoundingClientRect();
     const r = pivotEl.getBoundingClientRect();
-    if (r.width) { pivot.x = r.left - u.left + r.width / 2; pivot.y = r.top - u.top + r.height / 2; }
+    if (r.width) { anchor.x = r.left - u.left + r.width / 2; anchor.y = r.top - u.top + r.height / 2; }
     const li = document.querySelector(".logo-lamp") || document.querySelector(".logo-i");   // the dot of the i is the lamp
     if (li) { const lr = li.getBoundingClientRect(); lamp.x = lr.left - u.left + lr.width / 2; lamp.y = lr.top - u.top + lr.height / 2; }
-    pend.L = mobile() ? clamp(H * 0.055, 36, 46) : clamp(H * 0.12, 70, 120);
+    pend.L = mobile() ? clamp(vh * 0.05, 32, 42) : tall() ? 60 : clamp(H * 0.1, 56, 90);
+    const s = stage(); pivot.x = s.hx; pivot.y = s.hy;
     return u;
   }
 
+  const CAP = 40;                               // tall layouts: room under each circle for its name
   function slotFor(i) {
-    const hero = $(".hero").getBoundingClientRect(), u = uni.getBoundingClientRect();
-    let x0, x1, y0, y1, S;
+    const s = stage();
     if (!tall()) {
-      x0 = Math.max(W * 0.54, hero.right - u.left + 40); x1 = W - Math.max(40, W * 0.045);
-      y0 = 100; y1 = H - 185;
-      if (H < 560) { y0 = 64; y1 = H - 20; }      // short landscape: the prompt sits under the hero, not under the worlds
-      S = SLOTS_WIDE[i];
-    } else {
-      x0 = mobile() ? 20 : W * 0.12; x1 = W - x0;
-      y0 = Math.max(pivot.y + pend.L + 34, hero.bottom - u.top + 28); y1 = H - (mobile() ? 178 : 190);
-      if (y1 - y0 < 240) y1 = y0 + 240;          // small phones: planets shrink rather than slide under the prompt
-      S = SLOTS_TALL[i];
+      const hw = (s.x1 - s.x0) / 2, up = s.hy - s.y0, dn = s.y1 - s.hy;
+      const base = Math.min(hw * 0.3, (s.y1 - s.y0) * 0.17, 112), g = RING[i % RING.length];
+      const R = Math.max(H < 560 ? 36 : 46, base * g[2]), a = g[0] * Math.PI / 180, cx = Math.sin(a), cy = -Math.cos(a);
+      return { x: s.hx + cx * g[1] * (hw - R), y: s.hy + cy * g[1] * ((cy < 0 ? up : dn) - R), R };
     }
-    const rw = x1 - x0, rh = y1 - y0;
-    const base = tall() ? Math.min(rw * 0.17, rh * 0.16, mobile() ? 58 : 100) : Math.min(rw * 0.19, rh * 0.2, 118);
-    const R = Math.max(mobile() ? 38 : 46, base * S[2]);
-    return { x: clamp(x0 + S[0] * rw, x0 + R, x1 - R), y: clamp(y0 + S[1] * rh, y0 + R * (tall() ? 1 : 0.6), y1 - R), R };
+    // tall: a honeycomb under the pendulum (3 + 2 for five worlds), symmetric about the centre line
+    const n = planets.length || D.worlds.length, top = Math.ceil(n / 2), gap = mobile() ? 14 : 30;
+    const R = Math.min((s.x1 - s.x0 - (top - 1) * gap) / (2 * top), mobile() ? 46 : 78);
+    const row = i < top ? 0 : 1, cnt = row ? n - top : top, k = row ? i - top : i;
+    return { x: s.hx + (k - (cnt - 1) / 2) * (2 * R + gap), y: s.hy + pend.L + 30 + R + row * (2 * R + CAP + 6), R };
   }
 
   // Precompute dot positions of a planet disc (relative, unit radius) + glyph cut-out mask.
@@ -123,7 +135,7 @@ NK.sky = (function () {
       b.className = "planet" + (w.color === "orange" ? " hot" : "");
       const n = w.projects.length;
       b.setAttribute("aria-label", `${w.name} — ${n} project${n === 1 ? "" : "s"}. ${w.tagline}`);
-      b.innerHTML = `<span class="ring" aria-hidden="true"></span><span class="lbl" aria-hidden="true"><span class="cnt">${String(n).padStart(2, "0")} ${n === 1 ? "project" : "projects"}</span><span class="name">${w.name.replace(" & ", " &amp; ")}</span></span>`;
+      b.innerHTML = `<span class="ring" aria-hidden="true"></span><span class="gl" aria-hidden="true">${w.glyph.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</span><span class="lbl" aria-hidden="true"><span class="cnt">${String(n).padStart(2, "0")} ${n === 1 ? "project" : "projects"}</span><span class="name">${w.name.replace(" & ", " &amp; ")}</span></span>`;
       li.appendChild(b); ul.appendChild(li);
       const p = { w, i, el: b, x: 0, y: 0, R: 60, sx: 0, sy: 0, sR: 60, tx: null, ty: null, tR: null, scale: 0, born: false, lit: 0, gone: false, fly: null, dots: [], phase: i * 1.7 };
       b.addEventListener("pointerenter", () => setHover(i));
@@ -136,8 +148,11 @@ NK.sky = (function () {
   }
 
   function layout() {
-    const r = uni.getBoundingClientRect();
+    vh = window.innerHeight;
+    let r = uni.getBoundingClientRect();
     W = Math.round(r.width); H = Math.round(r.height);
+    fitUniverse();
+    r = uni.getBoundingClientRect(); H = Math.round(r.height);
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     cell = mobile() ? 11 : low ? 12 : 10;
@@ -157,6 +172,19 @@ NK.sky = (function () {
     if (!pend.grabbed && !pend.scripted) { pend.x = pivot.x; pend.y = pivot.y + pend.L; }
     buildBase();
     kick();
+  }
+
+  // Tall screens: the first "screen" is as tall as the hero plus the worlds, so nothing ever sits on top of a world;
+  // short phones scroll instead of squeezing. Also tells the log where to start (just under the lowest world).
+  const screenEl = document.querySelector(".screen");
+  function fitUniverse() {
+    if (!tall() || document.documentElement.classList.contains("gaming")) { uni.style.height = ""; if (screenEl) screenEl.style.minHeight = ""; return; }
+    measure();
+    let bottom = 0;
+    for (let i = 0; i < planets.length; i++) { const s = slotFor(i); bottom = Math.max(bottom, s.y + s.R + CAP); }
+    bottom = Math.ceil(bottom + 14);
+    uni.style.height = bottom > vh ? bottom + "px" : "";
+    if (screenEl) { const u = uni.getBoundingClientRect(), sr = screenEl.getBoundingClientRect(); screenEl.style.minHeight = Math.max(0, bottom - (sr.top - u.top)) + "px"; }
   }
 
   // Static dim grid drawn once → cheap per-frame blit.
@@ -328,8 +356,7 @@ NK.sky = (function () {
       x = b.right; y = b.top + b.height / 2;
     } else { const b = el.getBoundingClientRect(); x = b.left; y = b.top + b.height / 2; }
     h = fs * 0.82;
-    caret.style.height = h + "px"; caret.style.width = Math.max(5, fs * 0.5).toFixed(1) + "px";   // a block, like the prompt's
-    caret.classList.toggle("big", fs > 28); caret.style.setProperty("--dp", (fs * 0.058).toFixed(2) + "px");   // beside the headline it is drawn in dots, like the letters
+    caret.style.height = h + "px"; caret.style.width = Math.max(2, fs * 0.045).toFixed(1) + "px";   // one thin bar everywhere; a touch wider beside the big headline
     caret.style.transform = `translate(${x - u.left + 3}px, ${y - u.top - h / 2}px)`;
   }
 
@@ -357,10 +384,11 @@ NK.sky = (function () {
     if (slide) { slide.up.concat(slide.down).forEach((el) => el && (el.style.transform = "")); slide = null; }
     const s = script();
     intro = { t0: performance.now(), i: 0, ...s, colonAt: s.typedEnd + 80, bangAt: s.typedEnd + 520 };
-    intro.dropAt = intro.bangAt + 80; intro.loopAt = intro.dropAt + 380; intro.loopDur = 720; intro.spin = 620;
+    intro.leapAt = intro.bangAt + 80; intro.leapDur = 560;      // the spark swings from the colon over to the hub
+    intro.dropAt = intro.leapAt + intro.leapDur; intro.loopAt = intro.dropAt + 380; intro.loopDur = 720; intro.spin = 620;
     intro.endAt = intro.loopAt + intro.loopDur * planets.length + FORM * 1000;
     if (introStyle === "carve") planCarve();
-    cuts.length = 0; holes.length = 0; web.pulse = -9; pend.spinning = false;
+    cuts.length = 0; holes.length = 0; web.pulse = -9; pend.spinning = false; pend.leaping = false; fuse.q = 0;
     typedEls().forEach((e) => (e.textContent = ""));
     colonEl.classList.remove("on", "swinging");
     planets.forEach((p) => { p.born = false; p.scale = 0; p.fly = null; p.gone = false; p.thr = 0; p.hot = 0; p.form = 1; p.el.classList.remove("born", "gone"); });
@@ -395,15 +423,25 @@ NK.sky = (function () {
     if (e >= intro.bangAt && !intro.banged) {
       intro.banged = true; caret.classList.remove("on", "idle");   // "idle" too: its blink kept the caret showing over the colon
       document.body.classList.remove("intro");            // chrome becomes usable while the worlds are born
-      ring(pivot.x, pivot.y, 900, 12, 0.9, 1.4, true);
-      ring(pivot.x - 0, pivot.y, 900, 16, 0.4, 1.4, false, 70);
-      spark(pivot.x, pivot.y, 16, 180, RGB.ember, true);
+      ring(anchor.x, anchor.y, 900, 12, 0.9, 1.4, true);
+      ring(anchor.x, anchor.y, 900, 16, 0.4, 1.4, false, 70);
+      spark(anchor.x, anchor.y, 16, 180, RGB.ember, true);
       colonEl.classList.add("swinging");
-      pend.visible = true; pend.x = pivot.x; pend.y = pivot.y + pend.L * 0.3;
+      pend.visible = true; pend.leaping = true; pend.x = anchor.x; pend.y = anchor.y;
+    }
+    if (e >= intro.leapAt && e < intro.dropAt) {            // the colon's lower dot swings across, paying out a thread
+      fuse.q = easeIO((e - intro.leapAt) / intro.leapDur);
+      const [x, y] = fusePt(fuse.q);
+      pend.x = x; pend.y = y;
+    }
+    if (e >= intro.dropAt && !intro.landed) {               // it lands at the hub
+      intro.landed = true; pend.leaping = false; fuse.q = 1;
+      ring(pivot.x, pivot.y, 700, 12, 0.55, 1.1, true);
+      spark(pivot.x, pivot.y, 14, 160, RGB.ember);
     }
     if (e >= intro.dropAt && e < intro.loopAt) {
       const k = easeOut((e - intro.dropAt) / (intro.loopAt - intro.dropAt));
-      pend.x = pivot.x; pend.y = pivot.y + lerp(pend.L * 0.3, pend.L, k);
+      pend.x = pivot.x; pend.y = pivot.y + lerp(0, pend.L, k);
     }
     if (e >= intro.loopAt && introStyle === "carve") carveTick(e);
     else if (e >= intro.loopAt) {                         // classic: five equal loops, a ring born at the bob after each
@@ -420,6 +458,23 @@ NK.sky = (function () {
       }
     }
     if (e >= intro.endAt) finishIntro(false);
+  }
+
+  // The thread from the colon to the hub hangs in a shallow curve; the spark travels along it.
+  function fusePt(q) {
+    const dx = pivot.x - anchor.x, dy = pivot.y - anchor.y, sag = Math.min(90, Math.hypot(dx, dy) * 0.14);
+    const cx = anchor.x + dx / 2, cy = anchor.y + dy / 2 + sag * 2, k = 1 - q;
+    return [k * k * anchor.x + 2 * k * q * cx + q * q * pivot.x, k * k * anchor.y + 2 * k * q * cy + q * q * pivot.y];
+  }
+  function drawFuse() {
+    if (fuse.a < 0.02 || fuse.q < 0.01) return;
+    const n = Math.max(2, (Math.hypot(pivot.x - anchor.x, pivot.y - anchor.y) / 9) | 0), live = pend.leaping;
+    for (let k = 1; k <= n; k++) {
+      const q = k / n; if (q > fuse.q) break;
+      const [x, y] = fusePt(q), head = live ? Math.max(0, 1 - (fuse.q - q) / 0.12) : 0;
+      ctx.fillStyle = head > 0.05 ? rgba(RGB.ember, fuse.a * (0.5 + 0.5 * head)) : rgba(live ? RGB.cyan : RGB.deep, fuse.a * (live ? 0.55 : 0.34));
+      const s = 1.4 + head * 1.4; ctx.fillRect(x - s / 2, y - s / 2, s, s);
+    }
   }
 
   // ----- carve intro -----
@@ -538,7 +593,7 @@ NK.sky = (function () {
       if (skipped) { p.fly = null; p.x = p.sx; p.y = p.sy; p.scale = 1; p.form = 1; p.hot = 0; }
     });
     if (skipped) { cuts.length = 0; holes.length = 0; web.pulse = -9; }
-    pend.spinning = false;
+    pend.spinning = false; pend.leaping = false; fuse.q = 1;
     // always leave the bob moving: with motion paused (or reduced motion) the loop sleeps as soon as the bob is
     // still, which froze it mid-air; a push lets it swing and settle naturally (motion off damps it to rest)
     if (pend.scripted || skipped) { pend.scripted = false; pend.x = pivot.x; pend.y = pivot.y + pend.L; pend.vx = pend.L * (motion ? 1.2 : 1.6); pend.vy = 0; }
@@ -766,7 +821,7 @@ NK.sky = (function () {
       const ux = dx / L, uy = dy / L, n = Math.max(1, (len / 9) | 0), lit = p.lit, hot = p.hot || 0, flying = !!p.fly;
       for (let k = 0; k <= n; k++) {
         const q = k / n, x = pivot.x + ux * (8 + len * q), y = pivot.y + uy * (8 + len * q);
-        const soft = flying ? 1 : Math.min(1, 0.2 + q / 0.35);                  // at rest the thread emerges softly, clear of the text by the colon
+        const soft = flying ? 1 : Math.min(1, 0.45 + q / 0.3);                  // at rest the thread emerges softly from the hub
         const wt = Math.max(hot, qp >= 0 ? Math.exp(-(((q - qp) / 0.09) ** 2)) : 0);
         const a = a0 * soft * (flying ? 0.7 : 0.4 + 0.45 * lit);
         ctx.fillStyle = wt > 0.05 ? rgba(RGB.ice, Math.min(1, a + wt * 0.8 * a0)) : rgba(lit > 0.3 || flying ? RGB.cyan : RGB.deep, a);
@@ -794,7 +849,10 @@ NK.sky = (function () {
       for (let j = 0; j <= n; j++) { const a = pend.th * j / n; ctx.globalAlpha = 0.3 + 0.7 * j / n; ctx.fillRect(pivot.x + pend.L * Math.sin(a) - 1.5, pivot.y + pend.L * Math.cos(a) - 1.5, 3, 3); }
       ctx.globalAlpha = 1;
     }
-    dottedLine(pivot.x, pivot.y, pend.x, pend.y, 9, RGB.orange, 0.55, 2);
+    if (!pend.leaping) {
+      dottedLine(pivot.x, pivot.y, pend.x, pend.y, 9, RGB.orange, 0.55, 2);
+      ctx.fillStyle = "#ff8a3d"; ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 2.6, 0, TAU); ctx.fill();   // the hub pin
+    }
     const ch = pend.charge, r = 4.2 + ch * 3;
     // bob: a small dot cluster + faint halo
     ctx.fillStyle = rgba(RGB.orange, 0.14 + ch * 0.2);
@@ -822,7 +880,7 @@ NK.sky = (function () {
     return mode === "intro" || mode === "game" || Math.abs(beam.v - (hover >= 0 || pinned >= 0 ? 1 : 0)) > 0.01 || pend.grabbed || sparks.length || heatAny || rings.some((r) => t - r.t0 < r.life) ||
       planets.some((p) => p.fly || p.burst || Math.abs(p.lit - target(p)) > 0.01 || (p.born && !p.gone && p.scale < 0.999) || (p.gone && p.scale > 0.01) || p.tx != null) ||
       (!pend.scripted && Math.hypot(pend.vx, pend.vy) > 3) ||
-      cuts.length > 0 || holes.length > 0 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
+      cuts.length > 0 || holes.length > 0 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
       Math.abs(ptr.v - (ptr.on ? 1 : 0)) > 0.01 || (ptr.on && performance.now() - ptr.last < 400);   // full frame rate while the mouse moves
   }
   const target = (p) => (mode === "game" ? 0 : hover === p.i || pinned === p.i ? 1 : 0);
@@ -890,6 +948,8 @@ NK.sky = (function () {
     if (lit !== lampLit && logoEl) { lampLit = lit; logoEl.classList.toggle("lit", lit); }
     beam.v += ((want >= 0 ? 1 : 0) - beam.v) * Math.min(1, dt * 9);
     ptr.v += ((ptr.on ? 1 : 0) - ptr.v) * Math.min(1, dt * (ptr.on ? 12 : 5));
+    fuse.t = mode !== "game" && pend.visible && anchor.y > 70 && anchor.y < H ? 1 : 0;      // hidden once the colon has scrolled away
+    fuse.a += (fuse.t - fuse.a) * Math.min(1, dt * 6);
     for (let k = rings.length - 1; k >= 0; k--) if (t - rings[k].t0 > rings[k].life) rings.splice(k, 1);
     planets.forEach((p) => {
       p.lit += (target(p) - p.lit) * Math.min(1, dt * 9);
@@ -925,7 +985,7 @@ NK.sky = (function () {
   function draw(dt) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawGrid();
-    if (mode !== "game") { if (introStyle === "classic") { if (!tall()) drawConstellation(); } else { drawCuts(); drawWeb(); } }
+    if (mode !== "game") { drawFuse(); if (introStyle === "classic") { if (!tall()) drawConstellation(); } else { drawCuts(); drawWeb(); } }
     planets.forEach(drawPlanet);
     drawPendulum();
     if (mode === "game" && NK.game) NK.game.draw(ctx, dt);

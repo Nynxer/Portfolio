@@ -175,10 +175,10 @@
   const phone = matchMedia("(max-width:760px), (max-aspect-ratio:10/11)");
   let wasScrolled = false;
   const onScroll = () => {
+    if (!phone.matches && !game.active()) { sky.measure(); sky.kick(); }      // desktop: the universe is fixed, the colon scrolls; keep its thread attached
     const s = scrollY > 12;
     if (s === wasScrolled) return;
     wasScrolled = s; body.classList.toggle("scrolled", s);
-    if (!phone.matches && sky.mode !== "intro" && !game.active()) sky.stow(s);
   };
   window.addEventListener("scroll", onScroll, { passive: true });
   // the prompt gets its fade only while it is pinned to the bottom over older output
