@@ -40,6 +40,14 @@ NK.sky = (function () {
   let hover = -1;                  // planet index under pointer/focus (drives cone + bat signal)
   let pinned = -1;                 // planet "cd"-ed into from terminal
   const rings = [], sparks = [], twinkles = [];
+  // Intro styles. "carve" (default): the bob cuts each world out of the dot grid, the disc falls, and a thread from
+  // the colon slings it to its slot. "classic": the earlier birth (a ring at the bob that wanders out), kept as a backup.
+  // Chosen by NK.data.intro, or per replay with `replay classic` / `replay carve`.
+  let introStyle = "carve";
+  const cuts = [];                 // cut lines the bob leaves: { x, y, R, a0, a1, closed }
+  const holes = [];                // where a disc was cut out of the grid: { x, y, R, t0, dur }
+  const web = { pulse: -9 };       // one pulse runs out along the threads when the last world settles
+  const ptr = { x: -999, y: -999, v: 0, on: false, last: 0 };   // mouse position: the grid glows under it
   const listeners = {};
   const emit = (e, d) => (listeners[e] || []).forEach((f) => f(d));
 
@@ -320,7 +328,8 @@ NK.sky = (function () {
       x = b.right; y = b.top + b.height / 2;
     } else { const b = el.getBoundingClientRect(); x = b.left; y = b.top + b.height / 2; }
     h = fs * 0.82;
-    caret.style.height = h + "px";
+    caret.style.height = h + "px"; caret.style.width = Math.max(5, fs * 0.5).toFixed(1) + "px";   // a block, like the prompt's
+    caret.classList.toggle("big", fs > 28); caret.style.setProperty("--dp", (fs * 0.058).toFixed(2) + "px");   // beside the headline it is drawn in dots, like the letters
     caret.style.transform = `translate(${x - u.left + 3}px, ${y - u.top - h / 2}px)`;
   }
 
@@ -341,7 +350,8 @@ NK.sky = (function () {
     return { steps, typedEnd: at, igniteAt };
   }
 
-  function startIntro() {
+  function startIntro(style) {
+    introStyle = style === "classic" || style === "carve" ? style : D.intro === "classic" ? "classic" : "carve";
     mode = "intro";
     document.body.classList.add("intro"); document.body.classList.remove("bio-on");
     if (slide) { slide.up.concat(slide.down).forEach((el) => el && (el.style.transform = "")); slide = null; }
@@ -349,9 +359,11 @@ NK.sky = (function () {
     intro = { t0: performance.now(), i: 0, ...s, colonAt: s.typedEnd + 80, bangAt: s.typedEnd + 520 };
     intro.dropAt = intro.bangAt + 80; intro.loopAt = intro.dropAt + 380; intro.loopDur = 720; intro.spin = 620;
     intro.endAt = intro.loopAt + intro.loopDur * planets.length + FORM * 1000;
+    if (introStyle === "carve") planCarve();
+    cuts.length = 0; holes.length = 0; web.pulse = -9; pend.spinning = false;
     typedEls().forEach((e) => (e.textContent = ""));
     colonEl.classList.remove("on", "swinging");
-    planets.forEach((p) => { p.born = false; p.scale = 0; p.fly = null; p.gone = false; p.el.classList.remove("born", "gone"); });
+    planets.forEach((p) => { p.born = false; p.scale = 0; p.fly = null; p.gone = false; p.thr = 0; p.hot = 0; p.form = 1; p.el.classList.remove("born", "gone"); });
     pend.visible = false; pend.scripted = true; bobEl.classList.remove("on");
     caret.classList.add("on"); caret.classList.remove("idle");
     heat.fill(0); rings.length = 0; sparks.length = 0;
@@ -381,7 +393,7 @@ NK.sky = (function () {
       }
     }
     if (e >= intro.bangAt && !intro.banged) {
-      intro.banged = true; caret.classList.remove("on");
+      intro.banged = true; caret.classList.remove("on", "idle");   // "idle" too: its blink kept the caret showing over the colon
       document.body.classList.remove("intro");            // chrome becomes usable while the worlds are born
       ring(pivot.x, pivot.y, 900, 12, 0.9, 1.4, true);
       ring(pivot.x - 0, pivot.y, 900, 16, 0.4, 1.4, false, 70);
@@ -393,7 +405,8 @@ NK.sky = (function () {
       const k = easeOut((e - intro.dropAt) / (intro.loopAt - intro.dropAt));
       pend.x = pivot.x; pend.y = pivot.y + lerp(pend.L * 0.3, pend.L, k);
     }
-    if (e >= intro.loopAt) {
+    if (e >= intro.loopAt && introStyle === "carve") carveTick(e);
+    else if (e >= intro.loopAt) {                         // classic: five equal loops, a ring born at the bob after each
       const le = e - intro.loopAt, li = Math.floor(le / intro.loopDur), u = le - li * intro.loopDur;
       if (li < planets.length) {
         const th = u < intro.spin ? TAU * easeIO(u / intro.spin) : 0.1 * Math.exp(-(u - intro.spin) / 200) * Math.sin((u - intro.spin) / 100);
@@ -409,6 +422,101 @@ NK.sky = (function () {
     if (e >= intro.endAt) finishIntro(false);
   }
 
+  // ----- carve intro -----
+  // One segment per world: reel the string to that loop's radius (the wind-up), then one full loop around the colon.
+  // A shorter string spins faster, so the loops quicken as they shrink ("down"), or slow as they grow ("up").
+  function planCarve() {
+    const n = planets.length;
+    let order = planets.map((p, i) => i), radii;
+    if (tall()) radii = order.map((i, k) => 1 - 0.5 * k / Math.max(1, n - 1));        // phones: worlds are one size, so a fixed big→small pattern
+    else {
+      order.sort((a, b) => planets[b].sR - planets[a].sR);
+      const mx = planets[order[0]].sR || 1;
+      radii = order.map((i) => clamp(planets[i].sR / mx, 0.45, 1));
+    }
+    if (D.introOrder === "up") { radii.reverse(); if (!tall()) order.reverse(); }
+    let at = intro.loopAt;
+    intro.segs = order.map((pi, k) => {
+      const wind = k ? 90 : 180, spin = (k ? 1 : 1.25) * 520 * (0.5 + 0.5 * radii[k]);
+      const s = { pi, k: radii[k], t0: at, wind, spin };
+      at += wind + spin + 40;
+      return s;
+    });
+    intro.carveEnd = at;
+    intro.beatAt = at + 1300;                  // last disc has fallen, been caught and settled; one beat of stillness
+    intro.endAt = intro.beatAt + 520;
+  }
+  function carveTick(e) {
+    const segs = intro.segs, A = 0.34;
+    if (e < intro.carveEnd) {
+      let k = segs.length - 1;
+      while (k > 0 && e < segs[k].t0) k--;
+      for (let j = 0; j < k; j++) if (!segs[j].done) closeCut(segs[j]);          // a dropped frame never loses a world
+      const s = segs[k], u = e - s.t0, R = s.k * pend.L, prevR = k ? segs[k - 1].k * pend.L : pend.L;
+      let th, len = R;
+      if (u < s.wind) {                                    // anticipation: pull back, reel the string, flare the flame
+        const q = easeOut(u / s.wind); th = -A * q; len = lerp(prevR, R, q);
+        if (!s.flared) { s.flared = true; addHeat(pend.x, pend.y, 0.9 * Math.max(fire, 0.6), 1); }
+      } else if (u < s.wind + s.spin) {                    // the cut
+        th = -A + (TAU + A) * easeIO((u - s.wind) / s.spin);
+        if (!s.cut) { s.cut = { x: pivot.x, y: pivot.y, R, a0: -A, a1: -A, closed: 0 }; cuts.push(s.cut); }
+        s.cut.a1 = th; s.cut.x = pivot.x; s.cut.y = pivot.y; s.cut.R = R;
+      } else {                                             // tiny settle at the bottom
+        const v = u - s.wind - s.spin; th = 0.08 * Math.exp(-v / 160) * Math.sin(v / 90);
+        if (!s.done) closeCut(s);
+      }
+      pend.x = pivot.x + Math.sin(th) * len; pend.y = pivot.y + Math.cos(th) * len;
+    } else {
+      for (const s of segs) if (!s.done) closeCut(s);
+      if (pend.scripted) { pend.scripted = false; pend.vx = pend.L * 1.4; pend.vy = 0; }   // let go: the string pays back out
+    }
+    if (e >= intro.beatAt && !intro.pulsed) { intro.pulsed = true; web.pulse = t; ring(pivot.x, pivot.y, 620, 14, 0.2, 1.0); }
+  }
+  function closeCut(s) {
+    s.done = true;
+    const R = s.k * pend.L;
+    if (s.cut) { s.cut.a1 = s.cut.a0 + TAU; s.cut.closed = t; }
+    birthCarve(planets[s.pi], R);
+  }
+  // The disc inside the loop comes loose: it is the grid's own dots (the "slab"), and it leaves a hole behind.
+  function birthCarve(p, R) {
+    const slab = [];
+    const i0 = Math.floor((pivot.x - R - gx0) / cell), i1 = Math.ceil((pivot.x + R - gx0) / cell);
+    const j0 = Math.floor((pivot.y - R - gy0) / cell), j1 = Math.ceil((pivot.y + R - gy0) / cell);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const dx = gx0 + i * cell - pivot.x, dy = gy0 + j * cell - pivot.y, d = Math.hypot(dx, dy);
+      if (d < R) slab.push(dx / R, dy / R, cutGlow(d / R));
+    }
+    p.born = true; p.el.classList.add("born", "forming");
+    p.x = pivot.x; p.y = pivot.y; p.scale = R / p.R; p.form = 0; p.hot = 0; p.thr = 0;
+    p.fly = { carve: true, phase: "fall", t0: t, t1: 0, vx: 0, vy: 0, R0: R, slab };
+    holes.push({ x: pivot.x, y: pivot.y, R, t0: t, dur: 0.6 });
+    ring(pivot.x, pivot.y, 520, 10, 0.24, 0.7);
+    spark(pivot.x, pivot.y + R, 12, 130, RGB.ember);
+  }
+  const cutGlow = (q) => 0.28 + 0.34 * q * q;     // brightness of grid dots inside the loop (rim-weighted, like a planet)
+  // Fall under gravity, then one spring pulls the disc to its slot: it keeps the speed of the fall, overshoots once, settles.
+  function flyCarve(p, dt) {
+    const f = p.fly;
+    let R = f.R0;
+    if (f.phase === "fall") {
+      f.vy += 2300 * dt; p.y += f.vy * dt;
+      if (t - f.t0 >= 0.24) { f.phase = "sling"; f.t1 = t; p.hot = 1; spark(pivot.x, pivot.y, 5, 90, RGB.ember, true); }   // the thread goes taut
+    } else {
+      const w = 5.6, z = 0.62, n = 3, h = dt / n;
+      for (let s = 0; s < n; s++) {
+        f.vx += (w * w * (p.sx - p.x) - 2 * z * w * f.vx) * h; f.vy += (w * w * (p.sy - p.y) - 2 * z * w * f.vy) * h;
+        p.x += f.vx * h; p.y += f.vy * h;
+      }
+      const el = t - f.t1;
+      p.form = easeOut(clamp(el / 0.5, 0, 1));                       // grid dots cross-fade into the planet's own
+      R = lerp(f.R0, p.R, easeOut(clamp(el / 0.95, 0, 1)));
+      if ((Math.hypot(p.sx - p.x, p.sy - p.y) < 0.7 && Math.hypot(f.vx, f.vy) < 10) || el > 2.4) { p.fly = null; p.x = p.sx; p.y = p.sy; p.scale = 1; p.form = 1; return; }
+    }
+    p.scale = R / p.R;
+  }
+
+  // ----- classic intro (backup) -----
   // A world is born as a dotted ring at the bob, wanders out and settles into its slot.
   const FORM = 2.1;
   function birth(p) {
@@ -427,8 +535,9 @@ NK.sky = (function () {
     measure();
     planets.forEach((p) => {
       if (!p.born) { p.born = true; p.el.classList.add("born"); }
-      if (skipped) { p.fly = null; p.x = p.sx; p.y = p.sy; p.scale = 1; p.form = 1; }
+      if (skipped) { p.fly = null; p.x = p.sx; p.y = p.sy; p.scale = 1; p.form = 1; p.hot = 0; }
     });
+    if (skipped) { cuts.length = 0; holes.length = 0; web.pulse = -9; }
     pend.spinning = false;
     // always leave the bob moving: with motion paused (or reduced motion) the loop sleeps as soon as the bob is
     // still, which froze it mid-air; a push lets it swing and settle naturally (motion off damps it to rest)
@@ -453,6 +562,15 @@ NK.sky = (function () {
   function drawGrid() {
     ctx.drawImage(baseCache, 0, 0, W, H);
     for (const p of paths) p.length = 0;
+    // holes: the inside refills from the edge inward; a dark disc hides the dim base dots meanwhile
+    for (let k = holes.length - 1; k >= 0; k--) {
+      const h = holes[k], q = (t - h.t0) / h.dur;
+      if (q >= 1) { holes.splice(k, 1); continue; }
+      h.front = h.R * (1 - q * q); h.glow = 1 - q;
+      ctx.fillStyle = "#04060A"; ctx.beginPath(); ctx.arc(h.x, h.y, h.front, 0, TAU); ctx.fill();
+    }
+    const oc = cuts.length && !cuts[cuts.length - 1].closed ? cuts[cuts.length - 1] : null;   // the loop being cut right now
+    const pv = mode !== "game" ? ptr.v : 0;
     const bp = beam.i >= 0 && planets[beam.i] && beam.v > 0.01 && mode !== "game" ? planets[beam.i] : null;
     let ux = 0, uy = 0, bd = 0, bR = 0;
     if (bp) { ux = bp.x - lamp.x; uy = bp.y + (bp.dy || 0) - lamp.y; bd = Math.hypot(ux, uy) || 1; ux /= bd; uy /= bd; bR = bp.R * bp.scale; }
@@ -479,6 +597,15 @@ NK.sky = (function () {
             v += bb;
             if (r.ignite && age < 1.1 && z > -1 && z < 1 && Math.random() < 0.22) heat[k] = Math.max(heat[k], 0.75 * (1 - age / 1.1) * Math.max(fire, 0.6));
           }
+        }
+        if (pv > 0.01) { const dx = x - ptr.x, dy = y - ptr.y, d2 = dx * dx + dy * dy; if (d2 < 22500) v += pv * 0.24 * Math.exp(-d2 / 2600); }
+        if (oc) {                                          // dots the bob has already swept light up: this is the disc that will come loose
+          const dx = x - oc.x, dy = y - oc.y, d = Math.hypot(dx, dy);
+          if (d < oc.R) { let da = (Math.atan2(dx, dy) - oc.a0) % TAU; if (da < 0) da += TAU; if (da <= oc.a1 - oc.a0) v += cutGlow(d / oc.R); }
+        }
+        for (const h of holes) {
+          const d = Math.hypot(x - h.x, y - h.y);
+          if (d < h.R + 10) { if (d < h.front) v = 0; const z = (d - h.front) / 7; if (z > -1.5 && z < 1.5) v += 0.5 * h.glow * Math.exp(-z * z); }
         }
         if (v >= 0.05) paths[Math.min(9, (v * 10) | 0)].push(x, y);
       }
@@ -535,7 +662,7 @@ NK.sky = (function () {
   const beam = { i: -1, v: 0 };
   let light = new Float32Array(0);
 
-  const planetPaths = [[], [], [], [], []];
+  const PB = 12, planetPaths = Array.from({ length: PB }, () => []);   // brightness steps for planet dots (5 made the shimmer pop)
   function drawPlanet(p) {
     if (!p.born && mode !== "game") return;
     const col0 = p.w.color === "orange" ? RGB.orange : RGB.cyan;
@@ -555,8 +682,8 @@ NK.sky = (function () {
       ctx.globalAlpha = 1;
     }
     const sc = p.scale; if (sc < 0.02) return;
-    const form = p.form == null ? 1 : p.form;
-    ctx.globalAlpha = form;
+    const form = p.form == null ? 1 : p.form, carve = !!(p.fly && p.fly.carve);
+    ctx.globalAlpha = carve ? 1 : form;      // a carved disc is a solid piece of the screen from the start
     const R = p.R * sc, col = p.w.color === "orange" ? RGB.orange : RGB.cyan;
     const bob = motion && mode !== "game" && !p.fly ? Math.sin(t * 0.45 + p.phase) * 4 : 0;
     const X = p.x, Y = p.y + bob, lit = p.lit;
@@ -564,22 +691,29 @@ NK.sky = (function () {
     ctx.fillStyle = p.w.color === "orange" ? "#0a0604" : "#04080C";
     ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill();
     // rim-weighted dots, very slow shimmer
-    const d = p.dots, z = 1.9 * sc * (p.R / p.dotR), fade = 1 - lit;
+    const d = p.dots, z = 1.9 * sc * (p.R / p.dotR), fade = (1 - lit) * (carve ? form : 1);
     for (const a of planetPaths) a.length = 0;
     if (fade > 0.02) for (let q = 0; q < d.length; q += 4) {
       const a = d[q + 2] * (0.75 + (motion && mode !== "game" ? 0.25 * Math.sin(t * 1.4 + d[q + 3]) : 0.25)) * fade;
       if (a < 0.06) continue;
-      planetPaths[Math.min(4, (a * 5) | 0)].push(X + d[q] * R, Y + d[q + 1] * R);
+      planetPaths[Math.min(PB - 1, (a * PB) | 0)].push(X + d[q] * R, Y + d[q + 1] * R);
     }
-    for (let b = 0; b < 5; b++) {
+    for (let b = 0; b < PB; b++) {
       const arr = planetPaths[b]; if (!arr.length) continue;
-      ctx.fillStyle = rgba(col, 0.12 + b * 0.2);
+      ctx.fillStyle = rgba(col, 0.1 + ((b + 0.5) / PB) * 0.86);
       for (let q = 0; q < arr.length; q += 2) ctx.fillRect(arr[q] - z / 2, arr[q + 1] - z / 2, z, z);
+    }
+    if (carve && form < 1) {                     // the grid dots it was cut from, fading as the planet's own dots take over
+      const sl = p.fly.slab, k = 1 - form;
+      for (let q = 0; q < sl.length; q += 3) {
+        const [c, al, s] = BUCKETS[Math.min(9, (sl[q + 2] * 10) | 0)];
+        ctx.fillStyle = rgba(c, al * k); ctx.fillRect(X + sl[q] * R - s / 2, Y + sl[q + 1] * R - s / 2, s, s);
+      }
     }
     ctx.strokeStyle = rgba(col, 0.55); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.stroke();
     ctx.globalAlpha = 1;
-    if (form < 1) {                               // the ring it was born as, fading out
+    if (form < 1 && !carve) {                     // classic: the ring it was born as, fading out
       const n = Math.floor(TAU * R / 9); ctx.fillStyle = rgba(col, 1 - form);
       for (let j = 0; j < n; j++) { const a = j / n * TAU; ctx.fillRect(X + R * Math.sin(a) - 1.5, Y + R * Math.cos(a) - 1.5, 3, 3); }
     }
@@ -605,6 +739,43 @@ NK.sky = (function () {
     for (let k = 0; k <= n; k++) { const q = k / n; ctx.fillRect(lerp(x0, x1, q) - s / 2, lerp(y0, y1, q) - s / 2, s, s); }
   }
 
+  // Cut lines: the arc the bob has burned so far; once closed, the ring lingers and fades (concentric with the next ones).
+  function drawCuts() {
+    for (let k = cuts.length - 1; k >= 0; k--) {
+      const c = cuts[k], age = c.closed ? t - c.closed : 0, life = 1.5;
+      if (age > life) { cuts.splice(k, 1); continue; }
+      const span = Math.min(TAU, c.a1 - c.a0), n = Math.max(2, Math.floor(span * c.R / 6));
+      const all = c.closed ? 1 - age / life : 1, flash = c.closed ? Math.max(0, 1 - age / 0.3) : 0;
+      for (let j = 0; j <= n; j++) {
+        const q = j / n, a = c.a1 - span * (1 - q), x = c.x + c.R * Math.sin(a), y = c.y + c.R * Math.cos(a);
+        const head = c.closed ? flash : Math.max(0, (q - 0.82) / 0.18);          // white-hot at the bob, and all round as it closes
+        ctx.fillStyle = head > 0.05 ? `rgba(${95 + 138 * head | 0},${243 + 8 * head | 0},255,${all * (c.closed ? 0.8 : 0.3 + 0.7 * q)})` : rgba(RGB.cyan, all * (c.closed ? 0.8 : 0.3 + 0.7 * q));
+        const s = 2.6 + head * 1.2; ctx.fillRect(x - s / 2, y - s / 2, s, s);
+      }
+    }
+  }
+  // The web: a dotted thread from the colon to each world. Bright while it slings a world out, faint at rest.
+  function drawWeb() {
+    const pu = t - web.pulse, qp = pu >= 0 && pu < 0.6 ? pu / 0.6 : -1;
+    for (const p of planets) {
+      const a0 = p.thr || 0;
+      if (a0 < 0.02 || p.scale < 0.05 || p.gone) continue;
+      const px = p.x, py = p.y + (p.fly ? 0 : p.dy || 0), dx = px - pivot.x, dy = py - pivot.y, L = Math.hypot(dx, dy) || 1;
+      const len = L - p.R * p.scale - 16;
+      if (len < 10) continue;
+      const ux = dx / L, uy = dy / L, n = Math.max(1, (len / 9) | 0), lit = p.lit, hot = p.hot || 0, flying = !!p.fly;
+      for (let k = 0; k <= n; k++) {
+        const q = k / n, x = pivot.x + ux * (8 + len * q), y = pivot.y + uy * (8 + len * q);
+        const soft = flying ? 1 : Math.min(1, 0.2 + q / 0.35);                  // at rest the thread emerges softly, clear of the text by the colon
+        const wt = Math.max(hot, qp >= 0 ? Math.exp(-(((q - qp) / 0.09) ** 2)) : 0);
+        const a = a0 * soft * (flying ? 0.7 : 0.4 + 0.45 * lit);
+        ctx.fillStyle = wt > 0.05 ? rgba(RGB.ice, Math.min(1, a + wt * 0.8 * a0)) : rgba(lit > 0.3 || flying ? RGB.cyan : RGB.deep, a);
+        const s = 1.4 + wt * 1.2; ctx.fillRect(x - s / 2, y - s / 2, s, s);
+      }
+    }
+  }
+
+  // Classic backup: a dotted chain from world to world.
   function drawConstellation() {
     const ps = planets.filter((p) => p.born && !p.fly && !p.gone && p.scale > 0.9);
     for (let k = 0; k < ps.length - 1; k++) {
@@ -650,7 +821,9 @@ NK.sky = (function () {
   function busy() {
     return mode === "intro" || mode === "game" || Math.abs(beam.v - (hover >= 0 || pinned >= 0 ? 1 : 0)) > 0.01 || pend.grabbed || sparks.length || heatAny || rings.some((r) => t - r.t0 < r.life) ||
       planets.some((p) => p.fly || p.burst || Math.abs(p.lit - target(p)) > 0.01 || (p.born && !p.gone && p.scale < 0.999) || (p.gone && p.scale > 0.01) || p.tx != null) ||
-      (!pend.scripted && Math.hypot(pend.vx, pend.vy) > 3);
+      (!pend.scripted && Math.hypot(pend.vx, pend.vy) > 3) ||
+      cuts.length > 0 || holes.length > 0 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
+      Math.abs(ptr.v - (ptr.on ? 1 : 0)) > 0.01 || (ptr.on && performance.now() - ptr.last < 400);   // full frame rate while the mouse moves
   }
   const target = (p) => (mode === "game" ? 0 : hover === p.i || pinned === p.i ? 1 : 0);
 
@@ -716,12 +889,19 @@ NK.sky = (function () {
     const lit = want >= 0 && mode !== "game";              // the i's dot lights up only while a world is lit
     if (lit !== lampLit && logoEl) { lampLit = lit; logoEl.classList.toggle("lit", lit); }
     beam.v += ((want >= 0 ? 1 : 0) - beam.v) * Math.min(1, dt * 9);
+    ptr.v += ((ptr.on ? 1 : 0) - ptr.v) * Math.min(1, dt * (ptr.on ? 12 : 5));
     for (let k = rings.length - 1; k >= 0; k--) if (t - rings[k].t0 > rings[k].life) rings.splice(k, 1);
     planets.forEach((p) => {
       p.lit += (target(p) - p.lit) * Math.min(1, dt * 9);
       p.el.classList.toggle("lit", p.lit > 0.5);
       p.el.classList.toggle("forming", !!p.fly);
-      if (p.fly) {
+      // thread: on while it slings the world out; at rest a faint web on wide screens only (phones stay calm)
+      const flying = p.fly && p.fly.carve;
+      const thrT = flying ? (p.fly.phase === "sling" ? 1 : 0) : introStyle === "carve" && !tall() && pend.visible && mode !== "game" && p.born && !p.gone ? 1 : 0;
+      p.thrT = thrT; p.thr = (p.thr || 0) + (thrT - (p.thr || 0)) * Math.min(1, dt * (thrT ? 14 : 2.5));
+      if (p.hot) p.hot = Math.max(0, p.hot - dt * 2.4);
+      if (flying) flyCarve(p, dt);
+      else if (p.fly) {                              // classic wander
         const el = t - p.fly.t0, q = clamp(el / p.fly.dur, 0, 1), e = easeIO(q), mo = easeIO(Math.min(1, el / 0.7));
         const A = Math.min(230, W * 0.16), ph = p.i * 1.9 + el * 1.15, amp = A * Math.sin(Math.PI * q) * (1 - 0.35 * q);
         p.x = p.fly.x0 + (p.sx - p.fly.x0) * e + (0.5 + 0.5 * Math.cos(ph)) * amp * 1.1;
@@ -737,7 +917,7 @@ NK.sky = (function () {
       }
       if (!p.fly) {
         if (p.gone) { p.scale = Math.max(0, p.scale - dt * 3.2); if (p.burst && t - p.burst.t0 > 0.9) p.burst = null; }
-        else if ((p.born || mode === "game") && p.scale < 1) p.scale = Math.min(1, p.scale + dt * 2);   // regrow ≈0.5 s
+        else if ((p.born || mode === "game") && p.scale < 1) p.scale = Math.min(1, p.scale + (1 - p.scale) * Math.min(1, dt * 6) + dt * 0.3);   // regrow ≈0.5 s, easing out
       }
     });
   }
@@ -745,7 +925,7 @@ NK.sky = (function () {
   function draw(dt) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawGrid();
-    if (mode !== "game" && !tall()) drawConstellation();
+    if (mode !== "game") { if (introStyle === "classic") { if (!tall()) drawConstellation(); } else { drawCuts(); drawWeb(); } }
     planets.forEach(drawPlanet);
     drawPendulum();
     if (mode === "game" && NK.game) NK.game.draw(ctx, dt);
@@ -772,6 +952,18 @@ NK.sky = (function () {
     let rt = 0;
     window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { layout(); if (NK.game && NK.game.active()) NK.game.resize(); }, 120); });
     document.addEventListener("visibilitychange", () => { hidden = document.hidden; if (!hidden) kick(); });
+    // The visitor keeps their own mouse pointer; the grid glows softly under it, and a fast move leaves a brief trail.
+    if (matchMedia("(pointer:fine)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      window.addEventListener("pointermove", (e) => {
+        if (e.pointerType && e.pointerType !== "mouse") return;
+        const u = uni.getBoundingClientRect(), x = e.clientX - u.left, y = e.clientY - u.top, now = performance.now();
+        const sp = ptr.on ? Math.hypot(x - ptr.x, y - ptr.y) / Math.max(8, now - ptr.last) * 1000 : 0;
+        ptr.x = x; ptr.y = y; ptr.last = now; ptr.on = true;
+        if (sp > 900 && motion && mode !== "game") addHeat(x, y, Math.min(0.22, sp / 9000), 0);
+        kick();
+      }, { passive: true });
+      document.documentElement.addEventListener("pointerleave", () => { ptr.on = false; kick(); });
+    }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); layout(); });
   }
 
@@ -796,6 +988,6 @@ NK.sky = (function () {
       kick();
     },
     uni,
-    _dbg: () => ({ sparks: sparks.length, heat: heat.reduce((a, b) => a + b, 0), rings: rings.length, mode, t })
+    _dbg: () => ({ cuts: cuts.length, holes: holes.length, style: introStyle, sparks: sparks.length, heat: heat.reduce((a, b) => a + b, 0), rings: rings.length, mode, t })
   };
 })();

@@ -5,6 +5,11 @@
 window.NK = window.NK || {};
 
 NK.data = {
+  // Intro animation: "carve" (the pendulum cuts each world out of the dot grid) or "classic" (the earlier one:
+  // a ring born at the bob that wanders to its place). Either can be played with `replay carve` / `replay classic`.
+  intro: "carve",
+  // Loop order for "carve": "down" = biggest loop first, shrinking and speeding up; "up" = smallest first, ending on the biggest.
+  introOrder: "down",
   person: {
     name: "Nikhil Kamath",
     short: "Nikhil",

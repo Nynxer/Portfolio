@@ -124,7 +124,7 @@
   const storedMotion = () => (store.get("nk.motion") ? store.get("nk.motion") === "1" : !reduced);
   term.on("zen", (on) => sky.setMotion(on ? false : storedMotion()));
   term.on("motion", setMotion);
-  term.on("replay", () => { setHash(""); note.classList.remove("on"); sky.startIntro(); });
+  term.on("replay", (style) => { setHash(""); note.classList.remove("on"); sky.startIntro(style); });
   // blog (Obsidian-style vault)
   const blog = NK.blog;
   term.on("blog", (slug) => { term.close(); blog.open(slug); sky.setMotion(false); });

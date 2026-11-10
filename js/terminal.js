@@ -252,7 +252,7 @@ NK.term = (function () {
     const want = a[0] === "on" ? true : a[0] === "off" ? false : !NK.sky.motion;
     hooks.motion && hooks.motion(want); text(`motion ${want ? "on" : "off"}`, "dim");
   }, { usage: "motion [on|off]" });
-  def("replay", "replay the intro", () => { close(); hooks.replay && hooks.replay(); });
+  def("replay", "replay the intro (replay classic for the earlier one)", (a) => { close(); hooks.replay && hooks.replay(a[0]); });
   def("exit close quit q", "close the terminal", () => { close(); });
 
   // hidden
@@ -423,10 +423,23 @@ NK.term = (function () {
     if (cmd && cmd.complete === "post") pool = posts().map((p) => p.slug);
     if (cmd && cmd.complete === "dir") pool = pool.filter((p) => p.endsWith("/")).concat(["..", "~"]);
     if (cmd && cmd.name === "motion") pool = ["on", "off"];
+    if (cmd && cmd.name === "replay") pool = ["carve", "classic"];
     if (cmd && cmd.name === "help") pool = Object.keys(C).filter((k) => !C[k].hidden && !C[k].alias);
     return [...new Set(pool)].filter((p) => p.toLowerCase().startsWith(cur.toLowerCase())).map((p) => head + p);
   }
+  // Block cursor: the browser's own caret is hidden (caret-color in the CSS) and this block sits at the typing position.
+  function placeCur() {
+    const el = placeCur.el || (placeCur.el = document.querySelector(".term-cur"));
+    if (!el) return;
+    const m = placeCur.m || (placeCur.m = document.createElement("canvas").getContext("2d")), cs = getComputedStyle(input);
+    m.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const w = m.measureText("0").width || 8.4, i = input.selectionDirection === "backward" ? input.selectionStart : input.selectionEnd;
+    el.style.width = w.toFixed(2) + "px";
+    el.style.transform = `translateX(${(i * w - input.scrollLeft).toFixed(1)}px)`;
+    el.classList.toggle("mid", i < input.value.length);
+  }
   function updateGhost() {
+    placeCur();
     const v = input.value;
     if (!v || document.activeElement !== input) { ghost.innerHTML = ""; return; }
     const c = candidates(v)[0];
@@ -446,7 +459,7 @@ NK.term = (function () {
   // ---------- events ----------
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const v = input.value; input.value = ""; ghost.innerHTML = "";
+    const v = input.value; input.value = ""; ghost.innerHTML = ""; placeCur();
     if (!v.trim()) { if (!isOpen()) run("help"); return; }
     run(v);
   });
@@ -461,6 +474,10 @@ NK.term = (function () {
     else if (e.key === "l" && e.ctrlKey) { e.preventDefault(); run("clear", { echo: false }); }
     else if (e.key === "c" && e.ctrlKey && !window.getSelection().toString()) { e.preventDefault(); print(`${PS()}${esc(input.value)}^C`, "cmd"); input.value = ""; updateGhost(); }
   });
+  ["input", "keyup", "click", "focus", "blur", "select"].forEach((ev) => input.addEventListener(ev, placeCur));
+  input.addEventListener("keydown", () => requestAnimationFrame(placeCur));
+  document.addEventListener("selectionchange", () => { if (document.activeElement === input) placeCur(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeCur);
   out.addEventListener("click", (e) => {
     const f = e.target.closest("[data-fill]");
     if (f) { input.value = f.dataset.fill; input.focus({ preventScroll: true }); updateGhost(); return; }
