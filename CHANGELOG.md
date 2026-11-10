@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.8 (10 Nov 2026)
+- Layout: the colon's spark swings across to a hub at the centre of the worlds and the pendulum hangs there. The worlds sit in a ring round it, cut at the hub and flung outward; a faint thread links the colon to the hub. Text stays left, worlds right
+- Desktop: the pendulum and worlds stay in view while the terminal log scrolls
+- Phones: worlds in a 3 + 2 grid with the symbol inside each circle and the name under it; the prompt and chips are a solid bar at the bottom; the "#" hint lines are hidden; short phones scroll instead of overlapping
+- Cursor: one thin bar everywhere (headline, idle prompt, while typing)
+- Orbit Sling on phones: the sling is at the bottom and shoots upward, the page is locked while playing, the help text sits at the top
+- `replay classic` now plays around the hub, since the worlds' places changed
+
 ## v1.7 (10 Nov 2026)
 - New intro ("carve"): the pendulum winds up and loops around the colon in shrinking, quickening circles; the dots inside each loop light up, the disc comes loose, falls, and a thread from the colon slings it to its place. The threads stay as a faint web (desktop) and one pulse runs along them when the last world lands
 - The earlier intro is kept: `replay classic` in the terminal, or `intro: "classic"` in `js/data.js`. `introOrder` picks big-first or small-first loops
