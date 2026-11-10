@@ -720,7 +720,7 @@ NK.sky = (function () {
           const d = Math.hypot(x - h.x, y - h.y);
           if (d < h.R + 10) { if (d < h.front) v = 0; const z = (d - h.front) / 7; if (z > -1.5 && z < 1.5) v += 0.5 * h.glow * Math.exp(-z * z); }
         }
-        if (v >= 0.05) paths[heat[k] >= 0.88 && Math.abs(x - pend.x) < cell * 2.5 && Math.abs(y - pend.y) < cell * 3.5 ? 10 : Math.min(9, (v * 10) | 0)].push(x, y);
+        if (v >= 0.05) paths[heat[k] >= 0.9 && Math.abs(x - pend.x) < cell * 1.5 && Math.abs(y - pend.y) < cell * 3.5 ? 10 : Math.min(9, (v * 10) | 0)].push(x, y);
       }
     }
     flush();
@@ -909,7 +909,8 @@ NK.sky = (function () {
     }
     if (!pend.leaping) {
       dottedLine(pivot.x, pivot.y, pend.x, pend.y, 9, RGB.orange, 0.55, 2);
-      ctx.fillStyle = "#ff8a3d"; ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 2.6, 0, TAU); ctx.fill();   // the hub pin
+      ctx.fillStyle = rgba(RGB.spice, 1); ctx.shadowColor = rgba(RGB.spice, 1); ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(pivot.x, pivot.y, 2.8, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;   // the hub pin: the same accent as the colon it came from
     }
     const ch = pend.charge, r = 4.2 + ch * 3;
     // bob: a small dot cluster + faint halo

@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.9.2 (10 Nov 2026)
+- The pin the pendulum hangs from is in the accent colour, matching the colon
+
 ## v1.9.1 (10 Nov 2026)
 - Fix: the orbit no longer starts and brakes again when a world bursts. It holds still from the click, stays still while a world is open, and picks up gently when it closes; the turning and each world's drift now ease together
 - Fix: a mouse click's focus no longer keeps a world lit; keyboard focus still does
