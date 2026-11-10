@@ -20,6 +20,11 @@ NK.sky = (function () {
 
   const RGB = { cyan: [95, 243, 255], deep: [44, 138, 154], ice: [233, 251, 255], orange: [255, 138, 61], ember: [255, 178, 122] };
   const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+  // The third colour ("spice"), used sparingly: cursor, hover, the web's pulse, the hottest tip of the flame.
+  // Set NK.data.accent to "magenta", "lime" or "violet"; the CSS reads the same choice from <html data-accent>.
+  const ACCENTS = { magenta: [255, 61, 139], lime: [200, 255, 61], violet: [157, 107, 255] };
+  document.documentElement.dataset.accent = ACCENTS[D.accent] ? D.accent : "magenta";
+  RGB.spice = ACCENTS[document.documentElement.dataset.accent];
 
   // ---------- state ----------
   let W = 0, H = 0, dpr = 1, cell = 10, cols = 0, rows = 0, gx0 = 0, gy0 = 0;
@@ -59,14 +64,30 @@ NK.sky = (function () {
   let vh = 800;                                 // viewport height (the universe can be taller than it on short phones)
   // wide: worlds in a ring round the hub — [angle from straight up (deg, clockwise), distance (0–1 of the room), size]
   // the sector below the hub stays free for the pendulum
-  const RING = [[-58, 0.92, 1.0], [65, 0.9, 0.76], [128, 0.9, 0.8], [-125, 0.9, 0.8], [5, 0.94, 0.62]];
+  const RING_STILL = [[-58, 0.92, 1.0], [65, 0.9, 0.76], [128, 0.9, 0.8], [-125, 0.9, 0.8], [5, 0.94, 0.62]];   // short windows: no orbit, sector below the hub kept free
+  // The orbit: uneven spacing (never a neat pentagon), each world on its own distance.
+  const RING = [[-52, 0.96, 1.0], [28, 0.86, 0.72], [95, 0.98, 0.8], [161, 0.88, 0.76], [228, 0.97, 0.62]];
+  const orbit = { a: 0, v: 0 };                 // a = how far the system has turned (deg); v = 0–1, eases to 0 when it should hold still
+  const orbiting = () => !tall() && H >= 560;
+  let stageC = null;                            // the stage, cached by measure() so the frame loop never reads layout
+  // Where world i is right now: its place on the orbit, a little wander of its own, slightly bigger and brighter at the front.
+  function orbitPos(i, s) {
+    const g = RING[i % RING.length], hw = (s.x1 - s.x0) / 2, hh = (s.y1 - s.y0) / 2;
+    const R0 = Math.max(44, Math.min(hw * 0.27, hh * 0.3, 104) * g[2]), ph = i * 2.4;
+    const a = (g[0] - orbit.a) * Math.PI / 180 + 0.085 * Math.sin(t * 0.21 + ph);          // ± 5° ahead and behind
+    const d = g[1] * (1 + 0.03 * Math.sin(t * 0.33 + ph * 1.7));                            // a little in and out
+    const z = -Math.cos(a);                                                                 // +1 at the front (bottom), −1 at the back (top)
+    let x = s.hx + Math.sin(a) * d * (hw - R0 * 1.06 - 6), y = s.hy - Math.cos(a) * d * (hh - R0 * 1.06 - 6);
+    if (ptr.v > 0.01) { const k = (0.6 + 0.4 * z) * ptr.v; x += clamp((s.hx - ptr.x) * 0.012, -5, 5) * k; y += clamp((s.hy - ptr.y) * 0.012, -5, 5) * k; }   // parallax against the mouse
+    return { x, y, R: R0 * (1 + 0.06 * z), z };
+  }
   function stage() {
     const hero = $(".hero").getBoundingClientRect(), u = uni.getBoundingClientRect();
     if (!tall()) {
       const x0 = Math.max(W * 0.54, hero.right - u.left + 40), x1 = W - Math.max(40, W * 0.045);
       let y0 = 96, y1 = H - 64;
       if (H < 560) { y0 = 60; y1 = H - 14; }
-      return { x0, x1, y0, y1, hx: (x0 + x1) / 2, hy: y0 + (y1 - y0) * 0.44 };
+      return { x0, x1, y0, y1, hx: (x0 + x1) / 2, hy: y0 + (y1 - y0) * (H < 560 ? 0.44 : 0.5) };
     }
     const x0 = mobile() ? 16 : W * 0.12, y0 = hero.bottom - u.top + (mobile() ? 26 : 44);
     return { x0, x1: W - x0, y0, y1: H, hx: W / 2, hy: y0 };
@@ -78,16 +99,17 @@ NK.sky = (function () {
     const li = document.querySelector(".logo-lamp") || document.querySelector(".logo-i");   // the dot of the i is the lamp
     if (li) { const lr = li.getBoundingClientRect(); lamp.x = lr.left - u.left + lr.width / 2; lamp.y = lr.top - u.top + lr.height / 2; }
     pend.L = mobile() ? clamp(vh * 0.05, 32, 42) : tall() ? 60 : clamp(H * 0.1, 56, 90);
-    const s = stage(); pivot.x = s.hx; pivot.y = s.hy;
+    const s = stageC = stage(); pivot.x = s.hx; pivot.y = s.hy;
     return u;
   }
 
   const CAP = 40;                               // tall layouts: room under each circle for its name
   function slotFor(i) {
     const s = stage();
+    if (orbiting()) return orbitPos(i, s);
     if (!tall()) {
       const hw = (s.x1 - s.x0) / 2, up = s.hy - s.y0, dn = s.y1 - s.hy;
-      const base = Math.min(hw * 0.3, (s.y1 - s.y0) * 0.17, 112), g = RING[i % RING.length];
+      const base = Math.min(hw * 0.3, (s.y1 - s.y0) * 0.17, 112), g = RING_STILL[i % RING_STILL.length];
       const R = Math.max(H < 560 ? 36 : 46, base * g[2]), a = g[0] * Math.PI / 180, cx = Math.sin(a), cy = -Math.cos(a);
       return { x: s.hx + cx * g[1] * (hw - R), y: s.hy + cy * g[1] * ((cy < 0 ? up : dn) - R), R };
     }
@@ -235,6 +257,26 @@ NK.sky = (function () {
     p.burst = { t0: t, x: p.x, y: p.y + (p.dy || 0), R: p.R * p.scale };
     kick();
   }
+  // Clicking a world: an ember runs from the flame to it, then it bursts. Quick, so navigation never waits on it.
+  const darts = [];
+  function ignite(i) {
+    const p = planets[i];
+    if (!p || p.gone) return;
+    if (!pend.visible || mode !== "idle" || matchMedia("(prefers-reduced-motion: reduce)").matches) return burst(i);
+    darts.push({ i, t0: t, dur: 0.2 }); kick();
+  }
+  function drawDarts() {
+    for (const d of darts) {
+      const p = planets[d.i], q = clamp((t - d.t0) / d.dur, 0, 1), e = q * q;
+      const tx = p.x, ty = p.y + (p.dy || 0);
+      for (let k = 0; k < 6; k++) {
+        const u = Math.max(0, e - k * 0.045), x = lerp(pend.x, tx, u), y = lerp(pend.y, ty, u), s = 4.2 - k * 0.5;
+        ctx.fillStyle = k === 0 ? rgba(RGB.spice, 1) : rgba(RGB.orange, 0.8 - k * 0.12);
+        ctx.fillRect(x - s / 2, y - s / 2, s, s);
+        if (k === 0) addHeat(x, y, 0.5 * Math.max(fire, 0.5), 0);
+      }
+    }
+  }
   function burstPt(p, q, u) {
     const b = p.burst, d = p.dots, eo = 1 - Math.pow(1 - u, 3), ph = d[q + 3];
     const sp = 1 + 2.4 * eo * (0.6 + 0.4 * Math.sin(ph * 3));
@@ -356,7 +398,9 @@ NK.sky = (function () {
       x = b.right; y = b.top + b.height / 2;
     } else { const b = el.getBoundingClientRect(); x = b.left; y = b.top + b.height / 2; }
     h = fs * 0.82;
-    caret.style.height = h + "px"; caret.style.width = Math.max(2, fs * 0.045).toFixed(1) + "px";   // one thin bar everywhere; a touch wider beside the big headline
+    caret.style.height = h + "px"; const cp = Math.max(4.5, fs * 0.058), cd = Math.max(3, cp * 0.62);   // a thin column of dots at the dot-matrix pitch (two columns beside the big headline)
+    caret.style.setProperty("--cp", cp.toFixed(2) + "px"); caret.style.setProperty("--cd", cd.toFixed(2) + "px");
+    caret.style.width = (fs > 28 ? cp + cd : cd).toFixed(2) + "px";
     caret.style.transform = `translate(${x - u.left + 3}px, ${y - u.top - h / 2}px)`;
   }
 
@@ -483,12 +527,9 @@ NK.sky = (function () {
   function planCarve() {
     const n = planets.length;
     let order = planets.map((p, i) => i), radii;
-    if (tall()) radii = order.map((i, k) => 1 - 0.5 * k / Math.max(1, n - 1));        // phones: worlds are one size, so a fixed big→small pattern
-    else {
-      order.sort((a, b) => planets[b].sR - planets[a].sR);
-      const mx = planets[order[0]].sR || 1;
-      radii = order.map((i) => clamp(planets[i].sR / mx, 0.45, 1));
-    }
+    if (!tall()) order.sort((a, b) => RING[b % RING.length][2] - RING[a % RING.length][2]);     // biggest world first
+    const PAT = [1, 0.82, 0.66, 0.52, 0.4];                   // clearly different sizes, so the cut rings read as concentric circles
+    radii = order.map((i, k) => PAT[Math.min(k, PAT.length - 1)]);
     if (D.introOrder === "up") { radii.reverse(); if (!tall()) order.reverse(); }
     let at = intro.loopAt;
     intro.segs = order.map((pi, k) => {
@@ -498,7 +539,7 @@ NK.sky = (function () {
       return s;
     });
     intro.carveEnd = at;
-    intro.beatAt = at + 1300;                  // last disc has fallen, been caught and settled; one beat of stillness
+    intro.beatAt = at + 1500;                  // last disc has fallen, been caught and settled; one beat of stillness
     intro.endAt = intro.beatAt + 520;
   }
   function carveTick(e) {
@@ -544,7 +585,8 @@ NK.sky = (function () {
     }
     p.born = true; p.el.classList.add("born", "forming");
     p.x = pivot.x; p.y = pivot.y; p.scale = R / p.R; p.form = 0; p.hot = 0; p.thr = 0;
-    p.fly = { carve: true, phase: "fall", t0: t, t1: 0, vx: 0, vy: 0, R0: R, slab };
+    p.fly = { carve: true, phase: orbiting() ? "spiral" : "fall", t0: t, t1: 0, vx: 0, vy: 0, R0: R, slab };
+    if (orbiting()) p.hot = 1;
     holes.push({ x: pivot.x, y: pivot.y, R, t0: t, dur: 0.6 });
     ring(pivot.x, pivot.y, 520, 10, 0.24, 0.7);
     spark(pivot.x, pivot.y + R, 12, 130, RGB.ember);
@@ -554,7 +596,17 @@ NK.sky = (function () {
   function flyCarve(p, dt) {
     const f = p.fly;
     let R = f.R0;
-    if (f.phase === "fall") {
+    if (f.phase === "spiral") {
+      // Wide screens: the disc keeps the spin of the cut. It winds outward round the hub the way the bob was turning,
+      // overshoots its orbit once and settles into it, already moving. No falling.
+      const el = t - f.t0, w = 5.0, zt = 0.5, wd = w * Math.sqrt(1 - zt * zt);
+      const k = 1 - Math.exp(-zt * w * el) * (Math.cos(wd * el) + (zt * w / wd) * Math.sin(wd * el));
+      const lag = 2.6 * Math.exp(-el / 0.42), c = Math.cos(lag), sn = Math.sin(lag), dx = p.sx - pivot.x, dy = p.sy - pivot.y;
+      p.x = pivot.x + (dx * c - dy * sn) * k; p.y = pivot.y + (dx * sn + dy * c) * k;
+      p.form = easeOut(clamp(el / 0.5, 0, 1));
+      R = lerp(f.R0, p.sR, easeOut(clamp(el / 0.95, 0, 1)));
+      if (el > 1.9) { p.fly = null; p.x = p.sx; p.y = p.sy; p.R = p.sR; p.scale = 1; p.form = 1; return; }
+    } else if (f.phase === "fall") {
       f.vy += 2300 * dt; p.y += f.vy * dt;
       if (t - f.t0 >= 0.24) { f.phase = "sling"; f.t1 = t; p.hot = 1; spark(pivot.x, pivot.y, 5, 90, RGB.ember, true); }   // the thread goes taut
     } else {
@@ -610,7 +662,7 @@ NK.sky = (function () {
   const BUCKETS = [
     [[95, 243, 255], 0.06, 1.3], [[95, 243, 255], 0.12, 1.5], [[95, 243, 255], 0.2, 1.8], [[44, 138, 154], 0.6, 2],
     [[95, 243, 255], 0.5, 2.2], [[95, 243, 255], 0.75, 2.5], [[95, 243, 255], 1, 2.7], [[200, 251, 255], 1, 2.9],
-    [[255, 178, 122], 1, 3.1], [[255, 138, 61], 1, 3.3]
+    [[255, 178, 122], 1, 3.1], [RGB.spice, 1, 3.3]
   ];
   const paths = BUCKETS.map(() => []);
 
@@ -628,7 +680,8 @@ NK.sky = (function () {
     const pv = mode !== "game" ? ptr.v : 0;
     const bp = beam.i >= 0 && planets[beam.i] && beam.v > 0.01 && mode !== "game" ? planets[beam.i] : null;
     let ux = 0, uy = 0, bd = 0, bR = 0;
-    if (bp) { ux = bp.x - lamp.x; uy = bp.y + (bp.dy || 0) - lamp.y; bd = Math.hypot(ux, uy) || 1; ux /= bd; uy /= bd; bR = bp.R * bp.scale; }
+    const src = pend.visible ? pend : lamp;        // the beam comes from the pendulum's flame (the logo's lamp only glows along)
+    if (bp) { ux = bp.x - src.x; uy = bp.y + (bp.dy || 0) - src.y; bd = Math.hypot(ux, uy) || 1; ux /= bd; uy /= bd; bR = bp.R * bp.scale; }
     const tt = motion ? t : 0;
     const liveRings = rings.filter((r) => t - r.t0 < r.life);
     for (let j = 0; j < rows; j++) {
@@ -638,7 +691,7 @@ NK.sky = (function () {
         let I = 0;
         let v = heat[k];
         if (bp) {
-          const ax = x - lamp.x, ay = y - lamp.y, al = ax * ux + ay * uy;
+          const ax = x - src.x, ay = y - src.y, al = ax * ux + ay * uy;
           if (al > 0 && al < bd + bR) {
             const pp = ax * uy - ay * ux, wd = 16 + bR * 2.2 * al / bd;       // wide + soft = diffused
             v += beam.v * 0.26 * Math.exp(-(pp * pp) / (wd * wd)) * (0.35 + 0.65 * al / bd);
@@ -746,7 +799,7 @@ NK.sky = (function () {
     ctx.fillStyle = p.w.color === "orange" ? "#0a0604" : "#04080C";
     ctx.beginPath(); ctx.arc(X, Y, R, 0, TAU); ctx.fill();
     // rim-weighted dots, very slow shimmer
-    const d = p.dots, z = 1.9 * sc * (p.R / p.dotR), fade = (1 - lit) * (carve ? form : 1);
+    const d = p.dots, z = 1.9 * sc * (p.R / p.dotR), fade = (1 - lit) * (carve ? form : 1) * (orbiting() && p.z != null ? 0.86 + 0.14 * p.z : 1);
     for (const a of planetPaths) a.length = 0;
     if (fade > 0.02) for (let q = 0; q < d.length; q += 4) {
       const a = d[q + 2] * (0.75 + (motion && mode !== "game" ? 0.25 * Math.sin(t * 1.4 + d[q + 3]) : 0.25)) * fade;
@@ -797,7 +850,7 @@ NK.sky = (function () {
   // Cut lines: the arc the bob has burned so far; once closed, the ring lingers and fades (concentric with the next ones).
   function drawCuts() {
     for (let k = cuts.length - 1; k >= 0; k--) {
-      const c = cuts[k], age = c.closed ? t - c.closed : 0, life = 1.5;
+      const c = cuts[k], age = c.closed ? t - c.closed : 0, life = 2.4;
       if (age > life) { cuts.splice(k, 1); continue; }
       const span = Math.min(TAU, c.a1 - c.a0), n = Math.max(2, Math.floor(span * c.R / 6));
       const all = c.closed ? 1 - age / life : 1, flash = c.closed ? Math.max(0, 1 - age / 0.3) : 0;
@@ -824,7 +877,7 @@ NK.sky = (function () {
         const soft = flying ? 1 : Math.min(1, 0.45 + q / 0.3);                  // at rest the thread emerges softly from the hub
         const wt = Math.max(hot, qp >= 0 ? Math.exp(-(((q - qp) / 0.09) ** 2)) : 0);
         const a = a0 * soft * (flying ? 0.7 : 0.4 + 0.45 * lit);
-        ctx.fillStyle = wt > 0.05 ? rgba(RGB.ice, Math.min(1, a + wt * 0.8 * a0)) : rgba(lit > 0.3 || flying ? RGB.cyan : RGB.deep, a);
+        ctx.fillStyle = wt > 0.05 ? rgba(qp >= 0 && wt > hot ? RGB.spice : RGB.ice, Math.min(1, a + wt * 0.8 * a0)) : rgba(lit > 0.3 || flying ? RGB.cyan : RGB.deep, a);
         const s = 1.4 + wt * 1.2; ctx.fillRect(x - s / 2, y - s / 2, s, s);
       }
     }
@@ -880,7 +933,7 @@ NK.sky = (function () {
     return mode === "intro" || mode === "game" || Math.abs(beam.v - (hover >= 0 || pinned >= 0 ? 1 : 0)) > 0.01 || pend.grabbed || sparks.length || heatAny || rings.some((r) => t - r.t0 < r.life) ||
       planets.some((p) => p.fly || p.burst || Math.abs(p.lit - target(p)) > 0.01 || (p.born && !p.gone && p.scale < 0.999) || (p.gone && p.scale > 0.01) || p.tx != null) ||
       (!pend.scripted && Math.hypot(pend.vx, pend.vy) > 3) ||
-      cuts.length > 0 || holes.length > 0 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
+      cuts.length > 0 || holes.length > 0 || darts.length > 0 || Math.abs(orbit.v - (orbiting() && motion && mode === "idle" && hover < 0 && pinned < 0 ? 1 : 0)) > 0.02 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
       Math.abs(ptr.v - (ptr.on ? 1 : 0)) > 0.01 || (ptr.on && performance.now() - ptr.last < 400);   // full frame rate while the mouse moves
   }
   const target = (p) => (mode === "game" ? 0 : hover === p.i || pinned === p.i ? 1 : 0);
@@ -914,6 +967,7 @@ NK.sky = (function () {
   function reslot() {
     planets.forEach((p, i) => {
       const s = slotFor(i); p.sx = s.x; p.sy = s.y; p.sR = s.R;
+      if (orbiting()) return;                     // the frame loop keeps orbiting worlds on their slots
       if (!p.fly && mode !== "game" && (Math.abs(p.x - s.x) + Math.abs(p.y - s.y) + Math.abs(p.R - s.R) > 1)) { p.tx = s.x; p.ty = s.y; p.tR = s.R; p.release = true; }
     });
     kick();
@@ -948,6 +1002,15 @@ NK.sky = (function () {
     if (lit !== lampLit && logoEl) { lampLit = lit; logoEl.classList.toggle("lit", lit); }
     beam.v += ((want >= 0 ? 1 : 0) - beam.v) * Math.min(1, dt * 9);
     ptr.v += ((ptr.on ? 1 : 0) - ptr.v) * Math.min(1, dt * (ptr.on ? 12 : 5));
+    // the orbit holds still while you aim at a world, while one is open, during the game and when motion is paused
+    const live = orbiting() && !!stageC;
+    const go = live && motion && (mode === "idle" || mode === "intro") && hover < 0 && pinned < 0 && !pend.grabbed ? 1 : 0;
+    orbit.v += (go - orbit.v) * Math.min(1, dt * 6);
+    if (live) {
+      orbit.a = (orbit.a + orbit.v * 1.5 * dt) % 360;                 // one turn in about four minutes
+      for (const p of planets) { const o = orbitPos(p.i, stageC); p.sx = o.x; p.sy = o.y; p.sR = o.R; p.z = o.z; }
+    }
+    for (let k = darts.length - 1; k >= 0; k--) if (t - darts[k].t0 >= darts[k].dur) { burst(darts[k].i); darts.splice(k, 1); }
     fuse.t = mode !== "game" && pend.visible && anchor.y > 70 && anchor.y < H ? 1 : 0;      // hidden once the colon has scrolled away
     fuse.a += (fuse.t - fuse.a) * Math.min(1, dt * 6);
     for (let k = rings.length - 1; k >= 0; k--) if (t - rings[k].t0 > rings[k].life) rings.splice(k, 1);
@@ -957,7 +1020,7 @@ NK.sky = (function () {
       p.el.classList.toggle("forming", !!p.fly);
       // thread: on while it slings the world out; at rest a faint web on wide screens only (phones stay calm)
       const flying = p.fly && p.fly.carve;
-      const thrT = flying ? (p.fly.phase === "sling" ? 1 : 0) : introStyle === "carve" && !tall() && pend.visible && mode !== "game" && p.born && !p.gone ? 1 : 0;
+      const thrT = flying ? (p.fly.phase !== "fall" ? 1 : 0) : introStyle === "carve" && !tall() && pend.visible && mode !== "game" && p.born && !p.gone ? 1 : 0;
       p.thrT = thrT; p.thr = (p.thr || 0) + (thrT - (p.thr || 0)) * Math.min(1, dt * (thrT ? 14 : 2.5));
       if (p.hot) p.hot = Math.max(0, p.hot - dt * 2.4);
       if (flying) flyCarve(p, dt);
@@ -975,6 +1038,10 @@ NK.sky = (function () {
         p.x = lerp(p.x, p.tx, k); p.y = lerp(p.y, p.ty, k); p.R = lerp(p.R, p.tR, k);
         if (Math.abs(p.x - p.tx) + Math.abs(p.y - p.ty) + Math.abs(p.R - p.tR) < 0.5) { p.x = p.tx; p.y = p.ty; p.R = p.tR; if (p.release) { p.tx = p.ty = p.tR = null; p.release = false; } }
       }
+      if (live && !p.fly && mode !== "game") {
+        if (p.tx == null) { p.x = p.sx; p.y = p.sy; p.R = p.sR; }
+        else if (p.release) { p.tx = p.sx; p.ty = p.sy; p.tR = p.sR; }           // gliding home (after the game): aim at where the slot is now
+      }
       if (!p.fly) {
         if (p.gone) { p.scale = Math.max(0, p.scale - dt * 3.2); if (p.burst && t - p.burst.t0 > 0.9) p.burst = null; }
         else if ((p.born || mode === "game") && p.scale < 1) p.scale = Math.min(1, p.scale + (1 - p.scale) * Math.min(1, dt * 6) + dt * 0.3);   // regrow ≈0.5 s, easing out
@@ -987,6 +1054,7 @@ NK.sky = (function () {
     drawGrid();
     if (mode !== "game") { drawFuse(); if (introStyle === "classic") { if (!tall()) drawConstellation(); } else { drawCuts(); drawWeb(); } }
     planets.forEach(drawPlanet);
+    drawDarts();
     drawPendulum();
     if (mode === "game" && NK.game) NK.game.draw(ctx, dt);
     drawSparks(dt);
@@ -1035,7 +1103,7 @@ NK.sky = (function () {
     setMotion(on) { motion = !!on; kick(); },
     setFire(f) { fire = f; },
     setHover, pin(i) { pinned = i; kick(); },
-    burst, regrow, spark, ring, addHeat,
+    burst, ignite, regrow, spark, ring, addHeat,
     get planets() { return planets; }, get pivot() { return pivot; }, get pend() { return pend; },
     get size() { return { W, H }; }, measure,
     resetPendulum() { pend.snapped = false; pend.visible = true; pend.x = pivot.x; pend.y = pivot.y + pend.L; pend.vx = pend.L * 1.2; pend.vy = 0; bobEl.classList.add("on"); kick(); },
@@ -1048,6 +1116,6 @@ NK.sky = (function () {
       kick();
     },
     uni,
-    _dbg: () => ({ cuts: cuts.length, holes: holes.length, style: introStyle, sparks: sparks.length, heat: heat.reduce((a, b) => a + b, 0), rings: rings.length, mode, t })
+    _dbg: () => ({ orbit: orbit.a, orbitV: orbit.v, setOrbit(a) { orbit.a = a; }, cuts: cuts.length, holes: holes.length, style: introStyle, sparks: sparks.length, heat: heat.reduce((a, b) => a + b, 0), rings: rings.length, mode, t })
   };
 })();

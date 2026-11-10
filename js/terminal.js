@@ -88,10 +88,14 @@ NK.term = (function () {
   const PS = () => `<span class="p-user">nikhil@universe</span><span class="p-dim">:</span><span class="c-path">${esc(pathStr(cwd))}</span><span class="p-dim">$</span> `;
   // After a click or tap: focus the prompt only where there is a mouse, so phones don't pop the on-screen keyboard.
   const focusSoft = () => { if (matchMedia("(pointer:fine)").matches) input.focus({ preventScroll: true }); };
+  const openTo = (s) => { const m = String(s).match(/^([^:]{1,20}:)(.*)$/); return m ? `<span class="spice">${esc(m[1])}</span><span class="w">${esc(m[2])}</span>` : `<span class="w">${esc(s)}</span>`; };
   const A = (url, label) => `<a href="${esc(url)}" target="${url.startsWith("mailto:") ? "_self" : "_blank"}" rel="noopener">${esc(label)}</a>`;
+  // Focus: only the latest command and its output are at full strength. Older blocks dim; hover one, or tab into it, to read it again.
+  let grp = 0;
+  function dimOld() { grp++; for (const el of out.children) { el.classList.add("old"); el.classList.remove("fadein", "peek"); } }
   function print(html, cls) {
     const p = document.createElement(/<(ul|div|dl|h\d)/.test(html) ? "div" : "p");
-    p.className = "ln" + (cls ? " " + cls : "");
+    p.className = "ln" + (cls ? " " + cls : ""); p.dataset.g = grp;
     p.innerHTML = html;
     out.appendChild(p);
     follow();
@@ -216,7 +220,7 @@ NK.term = (function () {
 
   def("whoami about", "who is Nikhil?", () => {
     const P = D.person;
-    print(`<h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>${P.openTo ? `<p class="o-body"><span class="w">${esc(P.openTo)}</span></p>` : ""}`);
+    print(`<h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>${P.openTo ? `<p class="o-body">${openTo(P.openTo)}</p>` : ""}`);
     print(`<ul class="o-hl">${P.highlights.map(([a, b]) => `<li><b>${esc(a)}</b> — ${esc(b)}</li>`).join("")}</ul>`);
     print(`<div class="o-actions">${R("ls universe", "projects")}${R("experience")}${R("contact")}${A(D.links.resume.url, "résumé ↗")}</div>`);
   });
@@ -230,7 +234,7 @@ NK.term = (function () {
 
   def("contact", "how to reach me", () => {
     const L = D.links;
-    print(`<dl class="kv"><dt>email</dt><dd>${A(L.email.url, L.email.label)}</dd><dt>github</dt><dd>${A(L.github.url, L.github.label)}</dd><dt>linkedin</dt><dd>${A(L.linkedin.url, L.linkedin.label)}</dd><dt>resume</dt><dd>${A(L.resume.url, L.resume.label)}</dd></dl>${D.person.openTo ? `<p class="o-body"><span class="w">${esc(D.person.openTo)}</span></p>` : ""}`);
+    print(`<dl class="kv"><dt>email</dt><dd>${A(L.email.url, L.email.label)}</dd><dt>github</dt><dd>${A(L.github.url, L.github.label)}</dd><dt>linkedin</dt><dd>${A(L.linkedin.url, L.linkedin.label)}</dd><dt>resume</dt><dd>${A(L.resume.url, L.resume.label)}</dd></dl>${D.person.openTo ? `<p class="o-body">${openTo(D.person.openTo)}</p>` : ""}`);
   });
   def("resume cv", "open my résumé (PDF)", () => run("open resume", { echo: false }));
   def("github gh", "open GitHub", () => run("open github", { echo: false }));
@@ -348,6 +352,7 @@ NK.term = (function () {
     line = String(line).trim();
     if (!line) return;
     if (opts.echo !== false) {
+      dimOld();
       const p = print(`${PS()}${esc(line)}`, "cmd");
       open();
       if (opts.history !== false) { if (hist[hist.length - 1] !== line) hist.push(line); if (hist.length > 60) hist.shift(); hi = hist.length; try { localStorage.setItem("nk.hist", JSON.stringify(hist)); } catch (_) {} }
@@ -390,6 +395,7 @@ NK.term = (function () {
   function type(cmd) {
     if (typing) { clearTimeout(typing); typing = null; const c = out.querySelector(".tcur"); if (c) c.remove(); }
     input.value = ""; updateGhost();
+    dimOld();
     const line = print(`${PS()}<span class="typed"></span><span class="tcur" aria-hidden="true"></span>`, "cmd");
     lastCmd = line; open();
     if (hist[hist.length - 1] !== cmd) { hist.push(cmd); if (hist.length > 60) hist.shift(); }
@@ -472,6 +478,9 @@ NK.term = (function () {
     else if (e.key === "l" && e.ctrlKey) { e.preventDefault(); run("clear", { echo: false }); }
     else if (e.key === "c" && e.ctrlKey && !window.getSelection().toString()) { e.preventDefault(); print(`${PS()}${esc(input.value)}^C`, "cmd"); input.value = ""; updateGhost(); }
   });
+  const peek = (e, on) => { const l = e.target.closest && e.target.closest(".ln.old"); if (l) out.querySelectorAll(`.ln[data-g="${l.dataset.g}"]`).forEach((x) => x.classList.toggle("peek", on)); };
+  out.addEventListener("mouseover", (e) => peek(e, true)); out.addEventListener("mouseout", (e) => peek(e, false));
+  out.addEventListener("focusin", (e) => peek(e, true)); out.addEventListener("focusout", (e) => peek(e, false));
   ["input", "keyup", "click", "focus", "blur", "select"].forEach((ev) => input.addEventListener(ev, placeCur));
   input.addEventListener("keydown", () => requestAnimationFrame(placeCur));
   document.addEventListener("selectionchange", () => { if (document.activeElement === input) placeCur(); });

@@ -94,7 +94,7 @@
   // Click a world: it bursts into embers first, then the terminal opens on a clean screen.
   sky.on("open", (w) => {
     planetOpener = document.activeElement;
-    sky.burst(D.worlds.indexOf(w));
+    sky.ignite(D.worlds.indexOf(w));
     // desktop: the panel opens beside the worlds, so the burst stays in view; phones: let it play first
     const wait = matchMedia("(max-width:760px)").matches ? 700 : 260;
     setTimeout(() => { term.type(`cd ~/universe/${w.id} && ls`); term.focusSoft(); }, wait);
