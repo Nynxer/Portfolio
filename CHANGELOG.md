@@ -8,6 +8,8 @@
 - Dev mode only: dot-matrix photos for `whoami` and Inkiniki (`tools/dotpic.py` builds `js/photos.js`; prod never downloads it). On wide screens the photo forms in the background dots at the hub, behind the worlds (clicks pass through), and the pendulum is put away; the next command, Esc or a click on a world clears it. On phones it sits inline, left of the name, like neofetch
 - Experience: Mercor from Nov 2025, PrintSmithz and Dhruva added; skills match the CV; languages line in `whoami`
 - Projects without a repo no longer show a generic "more on github" link
+- While a photo shows, the orbit holds, the worlds shrink a little and step back, and the photo is sized to the free middle with a gap round it (never under a world); if there's no room it sits inline instead
+- Fix: world labels scale with their circle and no longer spill out of the smaller ones
 - Hidden command: `cq`
 
 ## v1.9.3 (25 Nov 2026)

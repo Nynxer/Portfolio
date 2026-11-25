@@ -74,11 +74,12 @@ NK.sky = (function () {
   const orbiting = () => !tall() && H >= 560;
   let stageC = null;                            // the stage, cached by measure() so the frame loop never reads layout
   // Where world i is right now: its place on the orbit, a little wander of its own, slightly bigger and brighter at the front.
-  function orbitPos(i, s) {
+  function orbitPos(i, s, hf) {
+    if (hf == null) hf = holo.a;                                                           // a photo is showing: the worlds shrink a little and step back
     const g = RING[i % RING.length], hw = (s.x1 - s.x0) / 2, hh = (s.y1 - s.y0) / 2;
-    const R0 = Math.max(44, Math.min(hw * 0.27, hh * 0.3, 104) * g[2]), ph = i * 2.4;
+    const R0 = Math.max(44, Math.min(hw * 0.27, hh * 0.3, 104) * g[2]) * (1 - 0.16 * hf), ph = i * 2.4;
     const a = (g[0] - orbit.a) * Math.PI / 180 + 0.085 * Math.sin(orbit.t * 0.21 + ph);          // ± 5° ahead and behind
-    const d = g[1] * (1 + 0.03 * Math.sin(orbit.t * 0.33 + ph * 1.7));                            // a little in and out
+    const d = Math.min(1.02, g[1] * (1 + 0.03 * Math.sin(orbit.t * 0.33 + ph * 1.7)) * (1 + 0.06 * hf));   // a little in and out
     const z = -Math.cos(a);                                                                 // +1 at the front (bottom), −1 at the back (top)
     let x = s.hx + Math.sin(a) * d * (hw - R0 * 1.06 - 6), y = s.hy - Math.cos(a) * d * (hh - R0 * 1.06 - 6);
     if (ptr.v > 0.01) { const k = (0.6 + 0.4 * z) * ptr.v; x += clamp((s.hx - ptr.x) * 0.012, -5, 5) * k; y += clamp((s.hy - ptr.y) * 0.012, -5, 5) * k; }   // parallax against the mouse
@@ -671,9 +672,17 @@ NK.sky = (function () {
   function holoBuild(key) {
     const d = NK.photos && NK.photos[key], s = stageC;
     if (!d || !s) return null;
-    const src = atob(d.px), maxW = (s.x1 - s.x0) * 0.8, maxH = (s.y1 - s.y0) * 0.66;
-    let pitch = cell, cols = Math.min(d.w, Math.floor(maxW / pitch), Math.floor(maxH / pitch * d.w / d.h));
-    if (cols < d.w * 0.8) { pitch = cell / 2; cols = Math.min(d.w, Math.floor(maxW / pitch), Math.floor(maxH / pitch * d.w / d.h)); }   // detailed photos use half-spaced dots
+    const src = atob(d.px);
+    // the largest photo, centred on the hub, that keeps clear of every world (where they will sit with the photo up) and of the stage edges
+    const worlds = planets.map((p, i) => (orbiting() ? orbitPos(i, s, 1) : slotFor(i))), GAP = 22;
+    const fits = (w, h) => w / 2 <= s.hx - s.x0 && w / 2 <= s.x1 - s.hx && h / 2 <= s.hy - s.y0 && h / 2 <= s.y1 - s.hy &&
+      worlds.every((c) => Math.hypot(Math.max(0, Math.abs(c.x - s.hx) - w / 2), Math.max(0, Math.abs(c.y - s.hy) - h / 2)) >= c.R * 1.08 + GAP);
+    let lo = 0, hi = 2000;
+    for (let it = 0; it < 24; it++) { const m = (lo + hi) / 2; if (fits(m, m * d.h / d.w)) lo = m; else hi = m; }
+    const maxW = lo;
+    let pitch = cell, cols = Math.min(d.w, Math.floor(maxW / pitch));
+    if (cols < Math.min(d.w, 34)) { pitch = cell / 2; cols = Math.min(d.w, Math.floor(maxW / pitch)); }   // small room or a detailed photo: half-spaced dots
+    if (cols < 8) return null;
     const rows = Math.max(1, Math.round(cols * d.h / d.w)), fx = d.w / cols, fy = d.h / rows;
     const ox = Math.round((s.hx - cols * pitch / 2 - gx0) / cell) * cell + gx0, oy = Math.round((s.hy - rows * pitch / 2 - gy0) / cell) * cell + gy0;   // snapped to the grid
     const out = [];
@@ -991,7 +1000,7 @@ NK.sky = (function () {
     return mode === "intro" || mode === "game" || Math.abs(beam.v - (hover >= 0 || pinned >= 0 ? 1 : 0)) > 0.01 || pend.grabbed || sparks.length || heatAny || rings.some((r) => t - r.t0 < r.life) ||
       planets.some((p) => p.fly || p.burst || Math.abs(p.lit - target(p)) > 0.01 || (p.born && !p.gone && p.scale < 0.999) || (p.gone && p.scale > 0.01) || p.tx != null) ||
       (!pend.scripted && Math.hypot(pend.vx, pend.vy) > 3) ||
-      cuts.length > 0 || holes.length > 0 || darts.length > 0 || Math.abs(orbit.v - (orbiting() && motion && mode === "idle" && hover < 0 && pinned < 0 && t >= orbit.hold && !planets.some((p) => p.gone) ? 1 : 0)) > 0.02 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
+      cuts.length > 0 || holes.length > 0 || darts.length > 0 || Math.abs(orbit.v - (orbiting() && motion && mode === "idle" && hover < 0 && pinned < 0 && !holo.on && t >= orbit.hold && !planets.some((p) => p.gone) ? 1 : 0)) > 0.02 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
       Math.abs(ptr.v - (ptr.on ? 1 : 0)) > 0.01 || Math.abs(holo.a - (holo.on ? 1 : 0)) > 0.01 || (holo.on && t - holo.t0 < 0.7) || (ptr.on && performance.now() - ptr.last < 400);   // full frame rate while the mouse moves
   }
   const target = (p) => (mode === "game" ? 0 : hover === p.i || pinned === p.i ? 1 : 0);
@@ -1062,7 +1071,7 @@ NK.sky = (function () {
     ptr.v += ((ptr.on ? 1 : 0) - ptr.v) * Math.min(1, dt * (ptr.on ? 12 : 5));
     // the orbit holds still while you aim at a world, while one is open (burst and not yet regrown), during the game and when motion is paused
     const live = orbiting() && !!stageC, open = planets.some((p) => p.gone);
-    const go = live && motion && (mode === "idle" || mode === "intro") && hover < 0 && pinned < 0 && !open && !pend.grabbed && t >= orbit.hold ? 1 : 0;
+    const go = live && motion && (mode === "idle" || mode === "intro") && hover < 0 && pinned < 0 && !open && !pend.grabbed && !holo.on && t >= orbit.hold ? 1 : 0;
     orbit.v += (go - orbit.v) * Math.min(1, dt * (go ? 2 : 6));       // brakes in about half a second, picks up again over a second and a half
     if (live) {
       orbit.a = (orbit.a + orbit.v * 1.5 * dt) % 360;                 // one turn in about four minutes
@@ -1123,7 +1132,7 @@ NK.sky = (function () {
       const tr = `translate(${(p.x - p.R).toFixed(1)}px,${(p.y + (p.dy || 0) - p.R).toFixed(1)}px) scale(${p.scale.toFixed(3)})`;
       if (p._tr !== tr) { p.el.style.transform = tr; p._tr = tr; }
       const sz = (p.R * 2).toFixed(1) + "px";
-      if (p._sz !== sz) { p.el.style.width = p.el.style.height = sz; p._sz = sz; }
+      if (p._sz !== sz) { p.el.style.width = p.el.style.height = sz; p.el.style.setProperty("--d", sz); p._sz = sz; }
     });
     if (pend.visible) bobEl.style.transform = `translate(${pend.x.toFixed(1)}px,${pend.y.toFixed(1)}px)`;
   }

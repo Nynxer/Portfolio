@@ -141,10 +141,10 @@ body:not(.bio-on) .spark{transform:translateY(calc(var(--gap,0px) / -2))}
 .planet.born{opacity:1}
 .planet .ring{position:absolute;inset:0;border-radius:50%;transition:box-shadow .15s}
 .planet .gl{display:none}
-.planet .lbl{display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 8px;transition:opacity .18s}
-.planet .cnt{font-size:10px;line-height:1;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
+.planet .lbl{display:flex;flex-direction:column;align-items:center;gap:5px;max-width:84%;transition:opacity .18s}   /* --d = the circle's diameter (set by sky.js), so the label always fits inside */
+.planet .cnt{font-size:clamp(8px,calc(var(--d,120px)*.075),10px);line-height:1;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);white-space:nowrap}
 .planet.hot .cnt{color:var(--ember)}
-.planet .name{font-size:clamp(13px,1.1vw,16px);font-weight:700;line-height:1.2;color:var(--white);text-shadow:0 0 10px var(--void),0 0 3px var(--void)}
+.planet .name{font-size:clamp(10px,calc(var(--d,120px)*.112),16px);font-weight:700;line-height:1.2;color:var(--white);text-shadow:0 0 10px var(--void),0 0 3px var(--void)}
 .planet.lit .lbl,.planet.gone .lbl,.planet.forming .lbl{opacity:0}
 .planet.forming{pointer-events:none}
 .planet.gone{pointer-events:none}
