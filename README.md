@@ -19,6 +19,9 @@ No build step, no framework, no network requests. ~230 KB total, 57 KB of it the
 - **Prod** = the live site. **Dev** = `localhost`, a file opened directly, or any URL with `?dev`
   (e.g. https://nynxer.github.io/Portfolio/?dev to preview the real deploy).
 - `blog` in `js/data.js`: `"dev"` (shown only in dev, current), `true` (shown everywhere), `false` (never).
+- `dev: true` on any world or project in `js/data.js` hides it in prod.
+- Dot-matrix photos (dev only for now): put originals in `photos-src/` (git-ignored), list them in
+  `tools/dotpic.py`, run `python3 tools/dotpic.py`, then add `photo: "<key>"` to a project.
 - When the blog goes live: set `blog: true` and add the Blog line back to `llms.txt`.
 
 ## Blog auto-sync
@@ -37,7 +40,7 @@ No build step, no framework, no network requests. ~230 KB total, 57 KB of it the
 | `tests/sling.test.js` | `node tests/sling.test.js` checks every game level is solvable |
 
 ## Deep links
-`#/developer` · `#/developer/tasky` · `#/blog` · `#/blog/pluto` · `#/blog/tag/go` · `#/simple` · `#/sling`
+`#/automation` · `#/ai-robotics/pluto` · `#/blog` · `#/blog/pluto` · `#/blog/tag/go` · `#/simple` · `#/sling`
 
 ## Keyboard
 `/` focus terminal · type anywhere to start · `tab` complete · `↑` history · `esc` back ·

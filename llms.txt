@@ -11,32 +11,36 @@ This site is a terminal-style portfolio rendered with JavaScript. This file is t
 - Résumé (PDF): https://drive.google.com/file/d/1W98bTHA28VhHaj-DHMyxhjsBbndoo_OG/view?usp=sharing
 
 ## Highlights
-- Best Paper: Pluto, an autonomous weed-removing robot
+- IEEE Best Paper (CCube 2025): Pluto, a weed-removing robot. Paper: https://ieeexplore.ieee.org/document/11340480
 - Motorola Solutions: backend automation in Go + gRPC
-- Top 10 of 150+ teams at the Pondicherry Hackathon
+- Top 10 of 150+ teams at the 0x.Day Pondicherry hackathon
 
 ## Experience
-- Mercor, AI Code Evaluation & Agentic Benchmarking (contract), Dec 2025 – present, remote. Evaluating AI-generated code and building agentic benchmarks for frontier-model training.
+- Mercor, AI coding-agent training (contract), Nov 2025 – present, remote. Reviews open-source pull requests, writes the rubrics AI coding agents are scored on and the reference solutions they learn from.
+- PrintSmithz, Founder, 2025 – present. 3D-printing business: prototypes and custom pieces.
+- Dhruva Engineering Consultancy, Automation engineer (contract), 2025, remote. ARES Commander / AutoCAD drafting scripts.
 - Motorola Solutions, Backend Automation Intern, Aug 2024 – Jul 2025, Bengaluru. Go + gRPC job scheduler for remote script execution; Gmail/Drive API audit automation (~80% less manual work); Jenkins-managed jobs; MongoDB metrics ingestion.
-- Bharat Electronics (BEL), Intern, Jul – Aug 2024, India. Offline document summariser with NLTK + Hugging Face; multi-threading cut run time by 50%.
+- Bharat Electronics (BEL), Software Intern, Jul – Aug 2024, Bengaluru. Offline PDF summariser with NLTK + Hugging Face; multi-threading cut run time by 50%.
 
 ## Education
 - MSc AI & Engineering Systems, TU/e, Eindhoven, 2026 –
 - B.Tech Electronics & Computer Engineering, REVA University, Bengaluru, – 2025
 
 ## Skills
-Go, Python, gRPC, Docker, PostgreSQL, MongoDB, Jenkins, OpenCV, YOLO, Linux, CAD, AutoCAD LISP
+Go, Python, C++, Shell, SQL, gRPC, Docker, MongoDB, Jenkins, PyTorch, OpenCV, YOLO, Linux, CAD, AutoCAD LISP
+
+Languages: Konkani, English (IELTS 8.0), Hindi, Kannada
 
 ## Projects
-- Pluto (AI & Robotics): an autonomous weed-removing robot. Best Paper recognition. Robotics, computer vision.
-- Intelligent Traffic Signals (hackathon): real-time signal optimisation from camera feeds; Dockerised microservices, 85% vehicle recognition. Python, YOLOv5, Docker.
-- Tasky: task orchestration service that schedules, retries and reports on automated jobs. Go, PostgreSQL, Docker.
-- Go-Sim-Engine: lightweight deterministic simulation engine for stepping physics and agent models. Go.
-- Go-ImagePro: concurrent image-processing pipeline (resize, filter, convert) for the command line. Go.
-- Go-ASCII-Streamer: streams live video into the terminal as ASCII, frame by frame. Go, WebSockets.
-- PrintSmithz: 3D-printing studio; custom parts and prototypes, from CAD to shipped part.
-- Inkiniki: low-power e-ink display experiments. Embedded.
-- Home NAS: self-hosted network storage on a Raspberry Pi. Linux.
+- Pluto (AI & Robotics): a robot that spots weeds with deep learning and pulls them out. Best Paper, IEEE CCube 2025.
+- Remote job scheduler (Automation, Motorola Solutions): Go + gRPC, about 30 minutes saved per deployment.
+- Audit automation (Automation, Motorola Solutions): Gmail and Drive APIs, about 80% less manual work.
+- CAD drafting scripts (Automation, Dhruva Engineering): ARES Commander / AutoCAD.
+- Image Attendance System (AI & Robotics): face recognition in Python, OpenCV and Dlib; 20% more accurate.
+- Offline PDF summariser (AI & Robotics, BEL): NLTK + Hugging Face, 50% faster with multi-threading.
+- PrintSmithz (3D Printing): my 3D-printing business; prototypes and custom pieces.
+- Inkiniki (Tinkering): a pocket e-paper reader (ESP32) with a 3D-printed case. Books, photos, to-do lists and quotes, uploaded over Wi-Fi.
+- Intelligent Traffic Signals (Hackathons): YOLOv5 in Docker, 85% vehicle recognition. Top 10 of 150+ teams at 0x.Day Pondicherry.
 
 ## Pages
 - [Simple view (one page, no animation)](https://nynxer.github.io/Portfolio/#/simple)

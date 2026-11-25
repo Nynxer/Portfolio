@@ -99,8 +99,33 @@ NK.term = (function () {
     p.className = "ln" + (cls ? " " + cls : ""); p.dataset.g = grp;
     p.innerHTML = html;
     out.appendChild(p);
+    if (html.includes("dotpic")) drawPics(p);
     follow();
     return p;
+  }
+
+  // ---------- dot-matrix photos (dev mode only: main.js loads js/photos.js when NK.dev) ----------
+  const photo = (key, label) => (NK.dev ? `<canvas class="dotpic" data-pic="${esc(key)}" role="img" aria-label="${esc(label)}"></canvas>` : "");
+  function drawPics(root) {
+    root.querySelectorAll("canvas.dotpic:not([data-done])").forEach((c) => {
+      const d = NK.photos && NK.photos[c.dataset.pic];
+      if (!d) { if (NK.photos) c.remove(); else document.addEventListener("nk:photos", () => drawPics(root), { once: true }); return; }
+      c.dataset.done = "1";
+      const cell = d.w > 60 ? 5 : 6, dot = Math.round(cell * 0.72), dpr = Math.min(2, window.devicePixelRatio || 1);
+      c.width = d.w * cell * dpr; c.height = d.h * cell * dpr;
+      c.style.width = d.w * cell + "px";
+      const g = c.getContext("2d"); g.scale(dpr, dpr);
+      const px = atob(d.px), order = [];
+      for (let i = 0; i < d.w * d.h; i++) if (px.charCodeAt(3 * i) | px.charCodeAt(3 * i + 1) | px.charCodeAt(3 * i + 2)) order.push(i);
+      for (let i = order.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [order[i], order[j]] = [order[j], order[i]]; }
+      const put = (i) => {
+        g.fillStyle = `rgb(${px.charCodeAt(3 * i)},${px.charCodeAt(3 * i + 1)},${px.charCodeAt(3 * i + 2)})`;
+        g.fillRect((i % d.w) * cell + (cell - dot) / 2, ((i / d.w) | 0) * cell + (cell - dot) / 2, dot, dot);
+      };
+      if (reduced) return order.forEach(put);
+      let k = 0; const step = Math.ceil(order.length / 36);   // ~0.6 s: the dots light up in random order
+      (function frame() { for (const e = Math.min(order.length, k + step); k < e; k++) put(order[k]); if (k < order.length) requestAnimationFrame(frame); })();
+    });
   }
   // CLI scrolling: the page scrolls down so the newest command sits just under the header,
   // showing as much of its output as fits (or simply the bottom, when everything fits).
@@ -182,9 +207,10 @@ NK.term = (function () {
     if (r.kind === "post") { text(`opening ${r.post.title} …`, "dim"); hooks.blog && hooks.blog(r.post.slug); return; }
     if (r.kind !== "project") return text(`cat: ${a[0]}: Is a directory — try cd ${a[0]}`, "err");
     const { project: p, world: w } = r;
-    print(`<p class="o-kicker">${esc(w.name)} / ${esc(p.id)}.md</p><h2 class="o-title">${esc(p.title)}</h2><p class="o-body">${esc(p.summary)}</p><p class="o-list g" style="margin:8px 0 0">${p.tags.map(esc).join(" · ")}</p>`);
+    print(`<p class="o-kicker">${esc(w.name)} / ${esc(p.id)}.md</p><h2 class="o-title">${esc(p.title)}</h2><p class="o-body">${esc(p.summary)}</p>${p.photo ? photo(p.photo, p.title) : ""}<p class="o-list g" style="margin:8px 0 0">${p.tags.map(esc).join(" · ")}</p>`);
     const links = [];
-    if (p.repo) links.push(A(p.repo, "source ↗")); else links.push(A(D.links.github.url, "more on github ↗"));
+    if (p.paper) links.push(A(p.paper, "read the paper ↗"));
+    if (p.repo) links.push(A(p.repo, "source ↗"));
     if (p.demo) links.push(A(p.demo, "demo ↗"));
     print(`<div class="o-actions">${links.join("")}${R("cd ~/universe/" + w.id + " && ls", "← " + w.name)}</div>`);
   }, { usage: "cat <file>", complete: "file" });
@@ -222,7 +248,7 @@ NK.term = (function () {
 
   def("whoami about", "who is Nikhil?", () => {
     const P = D.person;
-    print(`<h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>${P.openTo ? `<p class="o-body">${openTo(P.openTo)}</p>` : ""}`);
+    print(`<div class="who">${photo("me", P.name)}<div><h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p></div></div><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>${P.openTo ? `<p class="o-body">${openTo(P.openTo)}</p>` : ""}${P.languages ? `<p class="o-body dim">speaks ${esc(P.languages)}</p>` : ""}`);
     print(`<ul class="o-hl">${P.highlights.map(([a, b]) => `<li><b>${esc(a)}</b> — ${esc(b)}</li>`).join("")}</ul>`);
     print(`<div class="o-actions">${R("ls universe", "projects")}${R("experience")}${R("contact")}${A(D.links.resume.url, "résumé ↗")}</div>`);
   });
@@ -242,6 +268,11 @@ NK.term = (function () {
   def("github gh", "open GitHub", () => run("open github", { echo: false }));
   def("linkedin", "open LinkedIn", () => run("open linkedin", { echo: false }));
   def("email mail", "write me an email", () => run("open email", { echo: false }));
+  def("cq", "calling any station", () => {
+    text("CQ CQ CQ, this is Nikhil, listening.");
+    print(`<span class="dim">no licence yet, just a HAM radio workshop, so email gets through faster:</span> ${A(D.links.email.url, D.links.email.label)} <span class="dim">· 73</span>`);
+  });
+
   def("hire", "start an email about a role", () => {
     const subject = "Thesis / internship opportunity (via your portfolio)";
     text(`opening an email to ${D.links.email.label} …`, "dim");

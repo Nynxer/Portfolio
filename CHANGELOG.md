@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.10 (25 Nov 2026)
+- New copy for the worlds, from the CV: Automation (was Developer), AI & Robotics, 3D Printing, Tinkering (was Curious Builder), Hackathons. Old names still work in `cd` and links
+- Real projects in the worlds: Motorola job scheduler and audit automation, Dhruva drafting scripts, attendance system, BEL PDF summariser, Inkiniki written up properly
+- Pluto links to the IEEE paper (terminal, simple view, no-JS page, llms.txt)
+- `dev: true` on a world or project hides it on the live site; the abandoned Go projects and Home NAS are marked
+- Dev mode only: dot-matrix photos in `whoami` and on Inkiniki (`tools/dotpic.py` builds `js/photos.js`; prod never downloads it)
+- Experience: Mercor from Nov 2025, PrintSmithz and Dhruva added; skills match the CV; languages line in `whoami`
+- Projects without a repo no longer show a generic "more on github" link
+- Hidden command: `cq`
+
 ## v1.9.3 (25 Nov 2026)
 - Dev / prod: the blog is hidden on the live site until the posts are real (`blog: "dev"` in `js/data.js`). It shows in dev mode: on localhost, from a file opened directly, or with `?dev` on the URL. In prod the Blog nav button, `blog/` in `ls`, the help and chip entries, the simple view's Writing section and `#/blog` links are gone; `blog` replies that it's still being written
 
