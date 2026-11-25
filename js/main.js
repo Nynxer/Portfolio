@@ -64,8 +64,8 @@
       <ul>${D.education.map((e) => `<li class="p"><h3>${esc(e.what)}</h3><p>${esc(e.org)} · ${esc(e.when)}</p></li>`).join("")}</ul>
       <h2>Skills</h2>
       <p>${D.skills.map(esc).join(" · ")}</p>
-      <h2>Writing</h2>
-      <ul>${(NK.posts || []).map((p) => `<li class="p"><h3><a href="#/blog/${p.slug}">${esc(p.title)}</a></h3><p>${esc(p.summary)}</p></li>`).join("")}</ul>
+      ${NK.blogOn ? `<h2>Writing</h2>
+      <ul>${(NK.posts || []).map((p) => `<li class="p"><h3><a href="#/blog/${p.slug}">${esc(p.title)}</a></h3><p>${esc(p.summary)}</p></li>`).join("")}</ul>` : ""}
       <p class="dim" style="margin-top:56px;font-size:12px">Prefer typing? Press <span class="kbd">esc</span> and use the terminal.</p>
     </div>`;
     $("#simple-back").addEventListener("click", () => showSimple(false));
@@ -89,6 +89,7 @@
   $("#btn-simple").addEventListener("click", () => showSimple(true));
 
   // ---------- nav + planets route through the terminal ----------
+  if (NK.blogOn) document.querySelectorAll('[data-cmd="blog"]').forEach((b) => (b.hidden = false));
   document.querySelectorAll("[data-cmd]").forEach((b) => b.addEventListener("click", () => { term.type(b.dataset.cmd); term.focusSoft(); }));
   let planetOpener = null;
   // Click a world: it bursts into embers first, then the terminal opens on a clean screen.
@@ -200,6 +201,7 @@
     if (!h) return false;
     if (h === "simple") { showSimple(true); return true; }
     if (h === "sling") { game.start("terminal"); return true; }
+    if ((h === "blog" || h.startsWith("blog/")) && !NK.blogOn) { setHash(""); return false; }
     if (h === "blog" || h.startsWith("blog/")) {
       const rest = h.slice(5);
       blog.open(rest.startsWith("tag/") ? { tag: rest.slice(4) } : rest || null); sky.setMotion(false);

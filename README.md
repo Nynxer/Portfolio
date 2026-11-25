@@ -15,6 +15,12 @@ No build step, no framework, no network requests. ~230 KB total, 57 KB of it the
   - Obsidian syntax works: `[[wikilinks]]`, `#tags`, `> [!note] callouts`, `==highlights==`, tasks, tables
   - `blog/templates/post.md` is a starter template (never published)
 
+## Dev vs prod
+- **Prod** = the live site. **Dev** = `localhost`, a file opened directly, or any URL with `?dev`
+  (e.g. https://nynxer.github.io/Portfolio/?dev to preview the real deploy).
+- `blog` in `js/data.js`: `"dev"` (shown only in dev, current), `true` (shown everywhere), `false` (never).
+- When the blog goes live: set `blog: true` and add the Blog line back to `llms.txt`.
+
 ## Blog auto-sync
 1. In Obsidian, install the **Obsidian Git** plugin and sync your notes into `blog/`.
 2. `.github/workflows/github-workflow-blog.yml` rebuilds `js/posts.js` on every push to `blog/**`, and Pages redeploys.

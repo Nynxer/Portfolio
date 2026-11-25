@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.9.3 (25 Nov 2026)
+- Dev / prod: the blog is hidden on the live site until the posts are real (`blog: "dev"` in `js/data.js`). It shows in dev mode: on localhost, from a file opened directly, or with `?dev` on the URL. In prod the Blog nav button, `blog/` in `ls`, the help and chip entries, the simple view's Writing section and `#/blog` links are gone; `blog` replies that it's still being written
+
 ## v1.9.2 (10 Nov 2026)
 - The pin the pendulum hangs from is in the accent colour, matching the colon
 

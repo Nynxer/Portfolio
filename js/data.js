@@ -12,6 +12,10 @@ NK.data = {
   intro: "carve",
   // Loop order for "carve": "down" = biggest loop first, shrinking and speeding up; "up" = smallest first, ending on the biggest.
   introOrder: "down",
+  // Blog visibility: true = always shown, false = never, "dev" = only in dev mode
+  // (localhost, a file opened directly, or ?dev on the URL, e.g. https://nynxer.github.io/Portfolio/?dev).
+  // Flip to true once the posts are real.
+  blog: "dev",
   person: {
     name: "Nikhil Kamath",
     short: "Nikhil",
@@ -123,3 +127,7 @@ NK.data = {
     }
   ]
 };
+
+// Dev mode: running locally, opened from disk, or ?dev in the URL. Prod = the live site without ?dev.
+NK.dev = location.protocol === "file:" || /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])$/.test(location.hostname) || /[?&]dev\b/.test(location.search);
+NK.blogOn = NK.data.blog === true || (NK.data.blog === "dev" && NK.dev);

@@ -40,4 +40,3 @@ Go, Python, gRPC, Docker, PostgreSQL, MongoDB, Jenkins, OpenCV, YOLO, Linux, CAD
 
 ## Pages
 - [Simple view (one page, no animation)](https://nynxer.github.io/Portfolio/#/simple)
-- [Blog](https://nynxer.github.io/Portfolio/#/blog)

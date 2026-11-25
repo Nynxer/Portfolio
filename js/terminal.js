@@ -18,7 +18,8 @@ NK.term = (function () {
 
   // ---------- filesystem built from data ----------
   const worlds = D.worlds;
-  const posts = () => NK.posts || [];
+  const BLOG = !!NK.blogOn;
+  const posts = () => (BLOG && NK.posts) || [];
   const postBy = (q) => { q = String(q || "").toLowerCase().replace(/\.md$/, ""); return posts().find((p) => p.slug === q || p.title.toLowerCase() === q); };
   const FILES = {
     "about.txt": "whoami", "contact.txt": "contact", "experience.txt": "experience",
@@ -47,7 +48,7 @@ NK.term = (function () {
     }
     const [a, b, c] = parts;
     if (parts.length === 0) return { kind: "home", path: [] };
-    if (a === "blog") {
+    if (a === "blog" && BLOG) {
       if (!b) return { kind: "blog", path: ["blog"] };
       const po = postBy(b); if (!po || parts.length > 2) return null;
       return { kind: "post", path: ["blog", po.slug + ".md"], post: po };
@@ -70,11 +71,11 @@ NK.term = (function () {
     const w = worldBy(name); if (w) return { kind: "world", path: ["universe", w.id], world: w };
     const pr = projBy(name); if (pr) return { kind: "project", path: ["universe", pr[1].id, pr[0].id + ".md"], world: pr[1], project: pr[0] };
     const po = postBy(name); if (po) return { kind: "post", path: ["blog", po.slug + ".md"], post: po };
-    if (/^blogs?$|^posts?$|^notes$/.test(name)) return { kind: "blog", path: ["blog"] };
+    if (BLOG && /^blogs?$|^posts?$|^notes$/.test(name)) return { kind: "blog", path: ["blog"] };
     return null;
   }
   function childrenOf(path) {
-    if (!path.length) return [{ n: "universe/", dir: true }, { n: "blog/", dir: true }, ...Object.keys(FILES).map((n) => ({ n }))];
+    if (!path.length) return [{ n: "universe/", dir: true }, ...(BLOG ? [{ n: "blog/", dir: true }] : []), ...Object.keys(FILES).map((n) => ({ n }))];
     if (path.length === 1 && path[0] === "blog") return posts().map((p) => ({ n: p.slug + ".md" }));
     if (path.length === 1 && path[0] === "universe") return worlds.map((w) => ({ n: w.id + "/", dir: true }));
     if (path.length === 2) { const w = worldBy(path[1]); return w ? w.projects.map((p) => ({ n: p.id + ".md" })) : []; }
@@ -123,7 +124,7 @@ NK.term = (function () {
 
   def("help ? man", "list commands (help <cmd> for one)", (a) => {
     if (a[0] && C[a[0]]) { const c = C[a[0]]; text(`${c.name} — ${c.desc}${c.usage ? "\nusage: " + c.usage : ""}`); return; }
-    const main = [["ls universe", "see my projects"], ["cd <world>", "step into a world"], ["cat <project>", "read one project"], ["whoami", "about me + highlights"], ["blog", "notes & build logs"], ["contact", "email, GitHub, LinkedIn"], ["resume", "open my résumé"]];
+    const main = [["ls universe", "see my projects"], ["cd <world>", "step into a world"], ["cat <project>", "read one project"], ["whoami", "about me + highlights"], ["blog", "notes & build logs"], ["contact", "email, GitHub, LinkedIn"], ["resume", "open my résumé"]].filter(([c]) => BLOG || c !== "blog");
     print(`<div class="help-grid">${main.map(([c, d]) => `<span>${c.includes("<") ? F(c.split(" ")[0] + " ", c) : R(c)}</span><span class="d">${esc(d)}</span>`).join("")}</div>`);
     print(`<span class="dim">also:</span> ${["tree", "experience", "skills", "simple", "motion", "history", "clear"].map((c) => R(c)).join("  ")}`);
     print(`<span class="dim">everything here is clickable ·</span> <span class="kbd">tab</span> <span class="dim">completes ·</span> <span class="kbd">esc</span> <span class="dim">goes back</span>`);
@@ -200,6 +201,7 @@ NK.term = (function () {
   }, { usage: "open <thing>", complete: "open" });
 
   def("blog notes posts read", "read my notes (Obsidian-style)", (a) => {
+    if (!BLOG) return text("blog: still being written, check back soon", "dim");
     const po = a[0] ? postBy(a[0].replace(/^blog\//, "")) : null;
     if (a[0] && !po) return text(`blog: no note called '${a[0]}' — try ls blog`, "err");
     text(po ? `opening ${po.title} …` : "opening the blog — esc to come back", "dim");
@@ -327,7 +329,7 @@ NK.term = (function () {
       const w = worldBy(cwd[1]), next = worlds[(worlds.indexOf(w) + 1) % worlds.length];
       list = [["cd ..", "← back"], ...w.projects.slice(0, 2).map((p) => ["cat " + p.id, "cat " + p.id]), ["cd ../" + next.id + " && ls", "next world →"]];
     } else {
-      list = [["ls universe", "projects", 1], ["whoami", "about"], ["blog", "blog"], ["contact", "contact"], ["simple", "simple", 0, "m-only"]];
+      list = [["ls universe", "projects", 1], ["whoami", "about"], ["blog", "blog"], ["contact", "contact"], ["simple", "simple", 0, "m-only"]].filter(([c]) => BLOG || c !== "blog");
     }
     chipsEl.innerHTML = list.map(([c, l, h, x]) => `<button type="button" class="chip${h ? " hl" : ""}${x ? " " + x : ""}" data-type="${esc(c)}" title="runs: ${esc(c)}">${esc(l)}</button>`).join("");
   }

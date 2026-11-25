@@ -79,6 +79,7 @@ button,.planet,label[for]{cursor:pointer}
 .nav{display:flex;align-items:center;gap:4px}
 .nav-link{padding:10px 12px;border-radius:8px;font-size:14px;color:var(--text-2);transition:color .12s}
 .nav-link:hover{color:var(--white)}
+.nav-link[hidden]{display:none}
 #nav-resume{color:var(--cyan)}
 #nav-resume:hover{color:var(--white)}
 .nav-tools{display:flex;gap:2px;margin:0 6px 0 10px;padding-left:10px;border-left:1px solid var(--line)}
