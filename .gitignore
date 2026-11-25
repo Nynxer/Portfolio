@@ -10,3 +10,6 @@ blog/.trash/
 node_modules/
 # Planning docs live outside the public repo
 BACKLOG.md
+
+# original photos for tools/dotpic.py (only the dot grids are committed)
+photos-src/

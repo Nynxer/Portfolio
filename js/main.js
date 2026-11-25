@@ -1,6 +1,6 @@
 /* ==========================================================================
    MAIN — wires sky, terminal, game, simple view, keyboard and URL hash.
-   Deep links: #/developer  #/developer/tasky  #/whoami  #simple  #sling
+   Deep links: #/automation  #/ai-robotics/pluto  #/whoami  #simple  #sling
    ========================================================================== */
 (function () {
   "use strict";
@@ -57,15 +57,15 @@
       <div class="links">${["email", "github", "linkedin", "resume"].map((k) => `<a href="${esc(L[k].url)}"${k === "email" ? "" : ' target="_blank" rel="noopener"'}>${esc(k === "resume" ? "Résumé ↗" : L[k].label)}</a>`).join("")}</div>
       <h2>Projects</h2>
       ${D.worlds.map((w) => `<section aria-labelledby="sw-${w.id}"><div class="world-h"><h3 id="sw-${w.id}">${esc(w.name)}</h3><span>${esc(w.tagline)}</span></div>
-        <ul>${w.projects.map((p) => `<li class="p"><h3>${esc(p.title)}${p.repo ? ` <a href="${esc(p.repo)}" target="_blank" rel="noopener">repo ↗</a>` : ""}</h3><p>${esc(p.summary)}</p><p class="g">${p.tags.map(esc).join(" · ")}</p></li>`).join("")}</ul></section>`).join("")}
+        <ul>${w.projects.map((p) => `<li class="p"><h3>${esc(p.title)}${p.repo ? ` <a href="${esc(p.repo)}" target="_blank" rel="noopener">repo ↗</a>` : ""}${p.paper ? ` <a href="${esc(p.paper)}" target="_blank" rel="noopener">paper ↗</a>` : ""}</h3><p>${esc(p.summary)}</p><p class="g">${p.tags.map(esc).join(" · ")}</p></li>`).join("")}</ul></section>`).join("")}
       <h2>Experience</h2>
       <ul>${D.experience.map((e) => `<li class="p"><h3>${esc(e.role)} · ${esc(e.org)}</h3><p class="dim">${esc(e.when)} · ${esc(e.where)}</p><p>${esc(e.what)}</p></li>`).join("")}</ul>
       <h2>Education</h2>
       <ul>${D.education.map((e) => `<li class="p"><h3>${esc(e.what)}</h3><p>${esc(e.org)} · ${esc(e.when)}</p></li>`).join("")}</ul>
       <h2>Skills</h2>
       <p>${D.skills.map(esc).join(" · ")}</p>
-      <h2>Writing</h2>
-      <ul>${(NK.posts || []).map((p) => `<li class="p"><h3><a href="#/blog/${p.slug}">${esc(p.title)}</a></h3><p>${esc(p.summary)}</p></li>`).join("")}</ul>
+      ${NK.blogOn ? `<h2>Writing</h2>
+      <ul>${(NK.posts || []).map((p) => `<li class="p"><h3><a href="#/blog/${p.slug}">${esc(p.title)}</a></h3><p>${esc(p.summary)}</p></li>`).join("")}</ul>` : ""}
       <p class="dim" style="margin-top:56px;font-size:12px">Prefer typing? Press <span class="kbd">esc</span> and use the terminal.</p>
     </div>`;
     $("#simple-back").addEventListener("click", () => showSimple(false));
@@ -89,11 +89,17 @@
   $("#btn-simple").addEventListener("click", () => showSimple(true));
 
   // ---------- nav + planets route through the terminal ----------
+  if (NK.dev) {   // dot-matrix photos: only fetched in dev mode
+    const load = (src, done) => { const s = document.createElement("script"); s.src = src; s.onload = done; document.head.appendChild(s); };
+    load("js/figure.js?v=1.10", () => load("js/photos.js?v=1.10", () => document.dispatchEvent(new Event("nk:photos"))));
+  }
+  if (NK.blogOn) document.querySelectorAll('[data-cmd="blog"]').forEach((b) => (b.hidden = false));
   document.querySelectorAll("[data-cmd]").forEach((b) => b.addEventListener("click", () => { term.type(b.dataset.cmd); term.focusSoft(); }));
   let planetOpener = null;
   // Click a world: it bursts into embers first, then the terminal opens on a clean screen.
   sky.on("open", (w) => {
     planetOpener = document.activeElement;
+    sky.hidePhoto();
     sky.ignite(D.worlds.indexOf(w));
     // desktop: the panel opens beside the worlds, so the burst stays in view; phones: let it play first
     const wait = matchMedia("(max-width:760px)").matches ? 700 : 260;
@@ -147,6 +153,7 @@
     if (!simple.hidden) { if (e.key === "Escape") { e.preventDefault(); showSimple(false); } return; }
     if (blog.isOpen()) { if (e.key === "Escape" && !typingTarget(a)) { e.preventDefault(); blog.close(); } else if (e.key === "Escape") a.blur(); return; }
 
+    if (e.key === "Escape" && sky.photo) { e.preventDefault(); sky.hidePhoto(); return; }
     if (e.key === "Escape") {
       if (typingTarget(a) && a.value) { a.value = ""; a.dispatchEvent(new Event("input")); return; }
       if (term.isOpen()) { e.preventDefault(); term.close(); if (a === term.input && !planetOpener) a.blur(); return; }
@@ -200,6 +207,7 @@
     if (!h) return false;
     if (h === "simple") { showSimple(true); return true; }
     if (h === "sling") { game.start("terminal"); return true; }
+    if ((h === "blog" || h.startsWith("blog/")) && !NK.blogOn) { setHash(""); return false; }
     if (h === "blog" || h.startsWith("blog/")) {
       const rest = h.slice(5);
       blog.open(rest.startsWith("tag/") ? { tag: rest.slice(4) } : rest || null); sky.setMotion(false);

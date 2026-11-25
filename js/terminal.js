@@ -18,7 +18,8 @@ NK.term = (function () {
 
   // ---------- filesystem built from data ----------
   const worlds = D.worlds;
-  const posts = () => NK.posts || [];
+  const BLOG = !!NK.blogOn;
+  const posts = () => (BLOG && NK.posts) || [];
   const postBy = (q) => { q = String(q || "").toLowerCase().replace(/\.md$/, ""); return posts().find((p) => p.slug === q || p.title.toLowerCase() === q); };
   const FILES = {
     "about.txt": "whoami", "contact.txt": "contact", "experience.txt": "experience",
@@ -47,7 +48,7 @@ NK.term = (function () {
     }
     const [a, b, c] = parts;
     if (parts.length === 0) return { kind: "home", path: [] };
-    if (a === "blog") {
+    if (a === "blog" && BLOG) {
       if (!b) return { kind: "blog", path: ["blog"] };
       const po = postBy(b); if (!po || parts.length > 2) return null;
       return { kind: "post", path: ["blog", po.slug + ".md"], post: po };
@@ -70,11 +71,11 @@ NK.term = (function () {
     const w = worldBy(name); if (w) return { kind: "world", path: ["universe", w.id], world: w };
     const pr = projBy(name); if (pr) return { kind: "project", path: ["universe", pr[1].id, pr[0].id + ".md"], world: pr[1], project: pr[0] };
     const po = postBy(name); if (po) return { kind: "post", path: ["blog", po.slug + ".md"], post: po };
-    if (/^blogs?$|^posts?$|^notes$/.test(name)) return { kind: "blog", path: ["blog"] };
+    if (BLOG && /^blogs?$|^posts?$|^notes$/.test(name)) return { kind: "blog", path: ["blog"] };
     return null;
   }
   function childrenOf(path) {
-    if (!path.length) return [{ n: "universe/", dir: true }, { n: "blog/", dir: true }, ...Object.keys(FILES).map((n) => ({ n }))];
+    if (!path.length) return [{ n: "universe/", dir: true }, ...(BLOG ? [{ n: "blog/", dir: true }] : []), ...Object.keys(FILES).map((n) => ({ n }))];
     if (path.length === 1 && path[0] === "blog") return posts().map((p) => ({ n: p.slug + ".md" }));
     if (path.length === 1 && path[0] === "universe") return worlds.map((w) => ({ n: w.id + "/", dir: true }));
     if (path.length === 2) { const w = worldBy(path[1]); return w ? w.projects.map((p) => ({ n: p.id + ".md" })) : []; }
@@ -98,8 +99,55 @@ NK.term = (function () {
     p.className = "ln" + (cls ? " " + cls : ""); p.dataset.g = grp;
     p.innerHTML = html;
     out.appendChild(p);
+    if (html.includes("dotpic")) drawPics(p);
+    if (html.includes("dotfig")) drawFigs(p);
     follow();
     return p;
+  }
+
+  // ---------- dot-matrix photos (dev mode only: main.js loads js/photos.js when NK.dev) ----------
+  // Wide screens: the photo appears in the background dots at the hub (sky.showPhoto). Phones: inline, left of the text.
+  let wantPic = "";
+  const photo = (key, label) => {
+    if (!NK.dev) return "";
+    wantPic = key;
+    if (NK.photos && NK.sky && NK.sky.showPhoto(key)) return "";
+    if (!NK.photos && !matchMedia("(max-width:760px), (orientation:portrait)").matches) {   // photos still loading: try the sky once they arrive
+      document.addEventListener("nk:photos", () => { if (wantPic === key) NK.sky.showPhoto(key); }, { once: true });
+      return "";
+    }
+    return `<canvas class="dotpic" data-pic="${esc(key)}" role="img" aria-label="${esc(label)}"></canvas>`;
+  };
+  // project figures: a labelled dot-matrix photo under the project text (js/figure.js, dev mode)
+  function drawFigs(root) {
+    root.querySelectorAll("canvas.dotfig:not([data-done])").forEach((c) => {
+      if (!NK.figure || !NK.photos) { document.addEventListener("nk:photos", () => drawFigs(root), { once: true }); return; }
+      const [wid, pid] = c.dataset.fig.split("/"), w = worldBy(wid), pr = w && w.projects.find((q) => q.id === pid);
+      c.dataset.done = "1";
+      if (!pr || !NK.figure.render(c, pr.figure, Math.min(640, (c.parentElement || out).clientWidth || 360))) c.remove();
+      follow();
+    });
+  }
+  function drawPics(root) {
+    root.querySelectorAll("canvas.dotpic:not([data-done])").forEach((c) => {
+      const d = NK.photos && NK.photos[c.dataset.pic];
+      if (!d) { if (NK.photos) c.remove(); else document.addEventListener("nk:photos", () => drawPics(root), { once: true }); return; }
+      c.dataset.done = "1";
+      const cell = d.w > 60 ? 5 : 6, dot = Math.round(cell * 0.72), dpr = Math.min(2, window.devicePixelRatio || 1);
+      c.width = d.w * cell * dpr; c.height = d.h * cell * dpr;
+      c.style.width = d.w * cell + "px";
+      const g = c.getContext("2d"); g.scale(dpr, dpr);
+      const px = atob(d.px), order = [];
+      for (let i = 0; i < d.w * d.h; i++) if (px.charCodeAt(3 * i) | px.charCodeAt(3 * i + 1) | px.charCodeAt(3 * i + 2)) order.push(i);
+      for (let i = order.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [order[i], order[j]] = [order[j], order[i]]; }
+      const put = (i) => {
+        g.fillStyle = `rgb(${px.charCodeAt(3 * i)},${px.charCodeAt(3 * i + 1)},${px.charCodeAt(3 * i + 2)})`;
+        g.fillRect((i % d.w) * cell + (cell - dot) / 2, ((i / d.w) | 0) * cell + (cell - dot) / 2, dot, dot);
+      };
+      if (reduced) return order.forEach(put);
+      let k = 0; const step = Math.ceil(order.length / 36);   // ~0.6 s: the dots light up in random order
+      (function frame() { for (const e = Math.min(order.length, k + step); k < e; k++) put(order[k]); if (k < order.length) requestAnimationFrame(frame); })();
+    });
   }
   // CLI scrolling: the page scrolls down so the newest command sits just under the header,
   // showing as much of its output as fits (or simply the bottom, when everything fits).
@@ -123,7 +171,7 @@ NK.term = (function () {
 
   def("help ? man", "list commands (help <cmd> for one)", (a) => {
     if (a[0] && C[a[0]]) { const c = C[a[0]]; text(`${c.name} — ${c.desc}${c.usage ? "\nusage: " + c.usage : ""}`); return; }
-    const main = [["ls universe", "see my projects"], ["cd <world>", "step into a world"], ["cat <project>", "read one project"], ["whoami", "about me + highlights"], ["blog", "notes & build logs"], ["contact", "email, GitHub, LinkedIn"], ["resume", "open my résumé"]];
+    const main = [["ls universe", "see my projects"], ["cd <world>", "step into a world"], ["cat <project>", "read one project"], ["whoami", "about me + highlights"], ["blog", "notes & build logs"], ["contact", "email, GitHub, LinkedIn"], ["resume", "open my résumé"]].filter(([c]) => BLOG || c !== "blog");
     print(`<div class="help-grid">${main.map(([c, d]) => `<span>${c.includes("<") ? F(c.split(" ")[0] + " ", c) : R(c)}</span><span class="d">${esc(d)}</span>`).join("")}</div>`);
     print(`<span class="dim">also:</span> ${["tree", "experience", "skills", "simple", "motion", "history", "clear"].map((c) => R(c)).join("  ")}`);
     print(`<span class="dim">everything here is clickable ·</span> <span class="kbd">tab</span> <span class="dim">completes ·</span> <span class="kbd">esc</span> <span class="dim">goes back</span>`);
@@ -181,9 +229,10 @@ NK.term = (function () {
     if (r.kind === "post") { text(`opening ${r.post.title} …`, "dim"); hooks.blog && hooks.blog(r.post.slug); return; }
     if (r.kind !== "project") return text(`cat: ${a[0]}: Is a directory — try cd ${a[0]}`, "err");
     const { project: p, world: w } = r;
-    print(`<p class="o-kicker">${esc(w.name)} / ${esc(p.id)}.md</p><h2 class="o-title">${esc(p.title)}</h2><p class="o-body">${esc(p.summary)}</p><p class="o-list g" style="margin:8px 0 0">${p.tags.map(esc).join(" · ")}</p>`);
+    print(`<p class="o-kicker">${esc(w.name)} / ${esc(p.id)}.md</p><h2 class="o-title">${esc(p.title)}</h2><p class="o-body">${esc(p.summary)}</p>${p.figure && NK.dev ? `<canvas class="dotfig" role="img" data-fig="${esc(w.id + "/" + p.id)}"></canvas>` : ""}<p class="o-list g" style="margin:8px 0 0">${p.tags.map(esc).join(" · ")}</p>`);
     const links = [];
-    if (p.repo) links.push(A(p.repo, "source ↗")); else links.push(A(D.links.github.url, "more on github ↗"));
+    if (p.paper) links.push(A(p.paper, "read the paper ↗"));
+    if (p.repo) links.push(A(p.repo, "source ↗"));
     if (p.demo) links.push(A(p.demo, "demo ↗"));
     print(`<div class="o-actions">${links.join("")}${R("cd ~/universe/" + w.id + " && ls", "← " + w.name)}</div>`);
   }, { usage: "cat <file>", complete: "file" });
@@ -200,6 +249,7 @@ NK.term = (function () {
   }, { usage: "open <thing>", complete: "open" });
 
   def("blog notes posts read", "read my notes (Obsidian-style)", (a) => {
+    if (!BLOG) return text("blog: still being written, check back soon", "dim");
     const po = a[0] ? postBy(a[0].replace(/^blog\//, "")) : null;
     if (a[0] && !po) return text(`blog: no note called '${a[0]}' — try ls blog`, "err");
     text(po ? `opening ${po.title} …` : "opening the blog — esc to come back", "dim");
@@ -220,7 +270,7 @@ NK.term = (function () {
 
   def("whoami about", "who is Nikhil?", () => {
     const P = D.person;
-    print(`<h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>${P.openTo ? `<p class="o-body">${openTo(P.openTo)}</p>` : ""}`);
+    print(`<div class="who">${photo("me", P.name)}<div class="who-t"><h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p></div></div><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>${P.openTo ? `<p class="o-body">${openTo(P.openTo)}</p>` : ""}${P.languages ? `<p class="o-body dim">speaks ${esc(P.languages)}</p>` : ""}`);
     print(`<ul class="o-hl">${P.highlights.map(([a, b]) => `<li><b>${esc(a)}</b> — ${esc(b)}</li>`).join("")}</ul>`);
     print(`<div class="o-actions">${R("ls universe", "projects")}${R("experience")}${R("contact")}${A(D.links.resume.url, "résumé ↗")}</div>`);
   });
@@ -240,6 +290,11 @@ NK.term = (function () {
   def("github gh", "open GitHub", () => run("open github", { echo: false }));
   def("linkedin", "open LinkedIn", () => run("open linkedin", { echo: false }));
   def("email mail", "write me an email", () => run("open email", { echo: false }));
+  def("cq", "calling any station", () => {
+    text("CQ CQ CQ, this is Nikhil, listening.");
+    print(`<span class="dim">no licence yet, just a HAM radio workshop, so email gets through faster:</span> ${A(D.links.email.url, D.links.email.label)} <span class="dim">· 73</span>`);
+  });
+
   def("hire", "start an email about a role", () => {
     const subject = "Thesis / internship opportunity (via your portfolio)";
     text(`opening an email to ${D.links.email.label} …`, "dim");
@@ -327,7 +382,7 @@ NK.term = (function () {
       const w = worldBy(cwd[1]), next = worlds[(worlds.indexOf(w) + 1) % worlds.length];
       list = [["cd ..", "← back"], ...w.projects.slice(0, 2).map((p) => ["cat " + p.id, "cat " + p.id]), ["cd ../" + next.id + " && ls", "next world →"]];
     } else {
-      list = [["ls universe", "projects", 1], ["whoami", "about"], ["blog", "blog"], ["contact", "contact"], ["simple", "simple", 0, "m-only"]];
+      list = [["ls universe", "projects", 1], ["whoami", "about"], ["blog", "blog"], ["contact", "contact"], ["simple", "simple", 0, "m-only"]].filter(([c]) => BLOG || c !== "blog");
     }
     chipsEl.innerHTML = list.map(([c, l, h, x]) => `<button type="button" class="chip${h ? " hl" : ""}${x ? " " + x : ""}" data-type="${esc(c)}" title="runs: ${esc(c)}">${esc(l)}</button>`).join("");
   }
@@ -352,6 +407,7 @@ NK.term = (function () {
     line = String(line).trim();
     if (!line) return;
     if (opts.echo !== false) {
+      wantPic = ""; NK.sky && NK.sky.hidePhoto && NK.sky.hidePhoto();   // a new command clears the photo
       dimOld();
       const p = print(`${PS()}${esc(line)}`, "cmd");
       open();

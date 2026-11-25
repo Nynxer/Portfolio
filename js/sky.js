@@ -10,6 +10,7 @@ NK.sky = (function () {
   const D = NK.data;
   const $ = (s) => document.querySelector(s);
   const TAU = Math.PI * 2;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
   const lerp = (a, b, t) => a + (b - a) * t;
   const easeIO = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -73,11 +74,12 @@ NK.sky = (function () {
   const orbiting = () => !tall() && H >= 560;
   let stageC = null;                            // the stage, cached by measure() so the frame loop never reads layout
   // Where world i is right now: its place on the orbit, a little wander of its own, slightly bigger and brighter at the front.
-  function orbitPos(i, s) {
+  function orbitPos(i, s, hf) {
+    if (hf == null) hf = holo.a;                                                           // a photo is showing: the worlds shrink a little and step back
     const g = RING[i % RING.length], hw = (s.x1 - s.x0) / 2, hh = (s.y1 - s.y0) / 2;
-    const R0 = Math.max(44, Math.min(hw * 0.27, hh * 0.3, 104) * g[2]), ph = i * 2.4;
+    const R0 = Math.max(44, Math.min(hw * 0.27, hh * 0.3, 104) * g[2]) * (1 - 0.16 * hf), ph = i * 2.4;
     const a = (g[0] - orbit.a) * Math.PI / 180 + 0.085 * Math.sin(orbit.t * 0.21 + ph);          // ± 5° ahead and behind
-    const d = g[1] * (1 + 0.03 * Math.sin(orbit.t * 0.33 + ph * 1.7));                            // a little in and out
+    const d = Math.min(1.02, g[1] * (1 + 0.03 * Math.sin(orbit.t * 0.33 + ph * 1.7)) * (1 + 0.06 * hf));   // a little in and out
     const z = -Math.cos(a);                                                                 // +1 at the front (bottom), −1 at the back (top)
     let x = s.hx + Math.sin(a) * d * (hw - R0 * 1.06 - 6), y = s.hy - Math.cos(a) * d * (hh - R0 * 1.06 - 6);
     if (ptr.v > 0.01) { const k = (0.6 + 0.4 * z) * ptr.v; x += clamp((s.hx - ptr.x) * 0.012, -5, 5) * k; y += clamp((s.hy - ptr.y) * 0.012, -5, 5) * k; }   // parallax against the mouse
@@ -195,6 +197,7 @@ NK.sky = (function () {
     });
     if (!pend.grabbed && !pend.scripted) { pend.x = pivot.x; pend.y = pivot.y + pend.L; }
     buildBase();
+    if (holo.on) { if (tall()) hidePhoto(); else holo.dots = holoBuild(holo.key) || holo.dots; }
     kick();
   }
 
@@ -663,6 +666,62 @@ NK.sky = (function () {
   }
 
   // ---------- drawing ----------
+  // ---------- photo in the grid (dev mode): a dot-matrix photo drawn into the background dots at the hub ----------
+  // Behind the worlds, clicks pass through; the pendulum is put away while it shows. Wide layouts only (phones show it inline).
+  const holo = { dots: null, a: 0, on: false, t0: 0, stowed: false, key: "" };
+  function holoBuild(key) {
+    const d = NK.photos && NK.photos[key], s = stageC;
+    if (!d || !s) return null;
+    const src = atob(d.px);
+    // the largest photo, centred on the hub, that keeps clear of every world (where they will sit with the photo up) and of the stage edges
+    const worlds = planets.map((p, i) => (orbiting() ? orbitPos(i, s, 1) : slotFor(i))), GAP = 22;
+    const fits = (w, h) => w / 2 <= s.hx - s.x0 && w / 2 <= s.x1 - s.hx && h / 2 <= s.hy - s.y0 && h / 2 <= s.y1 - s.hy &&
+      worlds.every((c) => Math.hypot(Math.max(0, Math.abs(c.x - s.hx) - w / 2), Math.max(0, Math.abs(c.y - s.hy) - h / 2)) >= c.R * 1.08 + GAP);
+    let lo = 0, hi = 2000;
+    for (let it = 0; it < 24; it++) { const m = (lo + hi) / 2; if (fits(m, m * d.h / d.w)) lo = m; else hi = m; }
+    const maxW = lo;
+    let pitch = cell, cols = Math.min(d.w, Math.floor(maxW / pitch));
+    if (cols < Math.min(d.w, 34)) { pitch = cell / 2; cols = Math.min(d.w, Math.floor(maxW / pitch)); }   // small room or a detailed photo: half-spaced dots
+    if (cols < 8) return null;
+    const rows = Math.max(1, Math.round(cols * d.h / d.w)), fx = d.w / cols, fy = d.h / rows;
+    const ox = Math.round((s.hx - cols * pitch / 2 - gx0) / cell) * cell + gx0, oy = Math.round((s.hy - rows * pitch / 2 - gy0) / cell) * cell + gy0;   // snapped to the grid
+    const out = [];
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      let r = 0, g = 0, b = 0, n = 0, e = 0;
+      for (let y = Math.floor(j * fy); y < Math.max(Math.floor(j * fy) + 1, Math.floor((j + 1) * fy)); y++)
+        for (let x = Math.floor(i * fx); x < Math.max(Math.floor(i * fx) + 1, Math.floor((i + 1) * fx)); x++) {
+          const q = 3 * (y * d.w + x), R = src.charCodeAt(q), G = src.charCodeAt(q + 1), B = src.charCodeAt(q + 2);
+          if (R | G | B) { r += R; g += G; b += B; n++; } else e++;
+        }
+      if (n && n >= e) out.push(ox + i * pitch, oy + j * pitch, `rgb(${r / n | 0},${g / n | 0},${b / n | 0})`, Math.random());
+    }
+    return { list: out, size: Math.max(2, pitch * 0.62) };
+  }
+  function showPhoto(key) {
+    if (tall() || mode === "game" || mode === "intro") return false;
+    const dots = holoBuild(key);
+    if (!dots) return false;
+    holo.dots = dots; holo.key = key; holo.on = true; holo.t0 = t;
+    if (pend.visible && !holo.stowed) { holo.stowed = true; api.stow(true); }
+    kick();
+    return true;
+  }
+  function hidePhoto() {
+    if (!holo.on) return;
+    holo.on = false;
+    if (holo.stowed) { holo.stowed = false; api.stow(false); }
+    kick();
+  }
+  function drawHolo(dt) {
+    holo.a += ((holo.on ? 1 : 0) - holo.a) * Math.min(1, (dt || 0.05) * (holo.on ? 5 : 7));
+    if (!holo.dots || holo.a < 0.01) { if (!holo.on) holo.dots = null; return; }
+    const L = holo.dots.list, s = holo.dots.size, hs = s / 2;
+    const rev = reduced ? 1 : clamp((t - holo.t0) / 0.6, 0, 1);       // the dots light up in random order
+    ctx.globalAlpha = 0.62 * holo.a;
+    for (let q = 0; q < L.length; q += 4) { if (L[q + 3] > rev) continue; ctx.fillStyle = L[q + 2]; ctx.fillRect(L[q] - hs, L[q + 1] - hs, s, s); }
+    ctx.globalAlpha = 1;
+  }
+
   const BUCKETS = [
     [[95, 243, 255], 0.06, 1.3], [[95, 243, 255], 0.12, 1.5], [[95, 243, 255], 0.2, 1.8], [[44, 138, 154], 0.6, 2],
     [[95, 243, 255], 0.5, 2.2], [[95, 243, 255], 0.75, 2.5], [[95, 243, 255], 1, 2.7], [[200, 251, 255], 1, 2.9],
@@ -941,8 +1000,8 @@ NK.sky = (function () {
     return mode === "intro" || mode === "game" || Math.abs(beam.v - (hover >= 0 || pinned >= 0 ? 1 : 0)) > 0.01 || pend.grabbed || sparks.length || heatAny || rings.some((r) => t - r.t0 < r.life) ||
       planets.some((p) => p.fly || p.burst || Math.abs(p.lit - target(p)) > 0.01 || (p.born && !p.gone && p.scale < 0.999) || (p.gone && p.scale > 0.01) || p.tx != null) ||
       (!pend.scripted && Math.hypot(pend.vx, pend.vy) > 3) ||
-      cuts.length > 0 || holes.length > 0 || darts.length > 0 || Math.abs(orbit.v - (orbiting() && motion && mode === "idle" && hover < 0 && pinned < 0 && t >= orbit.hold && !planets.some((p) => p.gone) ? 1 : 0)) > 0.02 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
-      Math.abs(ptr.v - (ptr.on ? 1 : 0)) > 0.01 || (ptr.on && performance.now() - ptr.last < 400);   // full frame rate while the mouse moves
+      cuts.length > 0 || holes.length > 0 || darts.length > 0 || Math.abs(orbit.v - (orbiting() && motion && mode === "idle" && hover < 0 && pinned < 0 && !holo.on && t >= orbit.hold && !planets.some((p) => p.gone) ? 1 : 0)) > 0.02 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
+      Math.abs(ptr.v - (ptr.on ? 1 : 0)) > 0.01 || Math.abs(holo.a - (holo.on ? 1 : 0)) > 0.01 || (holo.on && t - holo.t0 < 0.7) || (ptr.on && performance.now() - ptr.last < 400);   // full frame rate while the mouse moves
   }
   const target = (p) => (mode === "game" ? 0 : hover === p.i || pinned === p.i ? 1 : 0);
 
@@ -1012,7 +1071,7 @@ NK.sky = (function () {
     ptr.v += ((ptr.on ? 1 : 0) - ptr.v) * Math.min(1, dt * (ptr.on ? 12 : 5));
     // the orbit holds still while you aim at a world, while one is open (burst and not yet regrown), during the game and when motion is paused
     const live = orbiting() && !!stageC, open = planets.some((p) => p.gone);
-    const go = live && motion && (mode === "idle" || mode === "intro") && hover < 0 && pinned < 0 && !open && !pend.grabbed && t >= orbit.hold ? 1 : 0;
+    const go = live && motion && (mode === "idle" || mode === "intro") && hover < 0 && pinned < 0 && !open && !pend.grabbed && !holo.on && t >= orbit.hold ? 1 : 0;
     orbit.v += (go - orbit.v) * Math.min(1, dt * (go ? 2 : 6));       // brakes in about half a second, picks up again over a second and a half
     if (live) {
       orbit.a = (orbit.a + orbit.v * 1.5 * dt) % 360;                 // one turn in about four minutes
@@ -1061,6 +1120,7 @@ NK.sky = (function () {
   function draw(dt) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawGrid();
+    drawHolo(dt);
     if (mode !== "game") { drawFuse(); if (introStyle === "classic") { if (!tall()) drawConstellation(); } else { drawCuts(); drawWeb(); } }
     planets.forEach(drawPlanet);
     drawDarts();
@@ -1072,7 +1132,7 @@ NK.sky = (function () {
       const tr = `translate(${(p.x - p.R).toFixed(1)}px,${(p.y + (p.dy || 0) - p.R).toFixed(1)}px) scale(${p.scale.toFixed(3)})`;
       if (p._tr !== tr) { p.el.style.transform = tr; p._tr = tr; }
       const sz = (p.R * 2).toFixed(1) + "px";
-      if (p._sz !== sz) { p.el.style.width = p.el.style.height = sz; p._sz = sz; }
+      if (p._sz !== sz) { p.el.style.width = p.el.style.height = sz; p.el.style.setProperty("--d", sz); p._sz = sz; }
     });
     if (pend.visible) bobEl.style.transform = `translate(${pend.x.toFixed(1)}px,${pend.y.toFixed(1)}px)`;
   }
@@ -1104,7 +1164,8 @@ NK.sky = (function () {
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); layout(); });
   }
 
-  return {
+  const api = {
+    showPhoto, hidePhoto, get photo() { return holo.on ? holo.key : ""; },
     init, layout, kick, on: (e, f) => ((listeners[e] = listeners[e] || []).push(f)),
     startIntro, skipIntro: () => { if (mode === "intro") finishIntro(true); },
     get mode() { return mode; }, set mode(m) { mode = m; kick(); },
@@ -1127,4 +1188,5 @@ NK.sky = (function () {
     uni,
     _dbg: () => ({ orbit: orbit.a, orbitV: orbit.v, setOrbit(a) { orbit.a = a; }, cuts: cuts.length, holes: holes.length, style: introStyle, sparks: sparks.length, heat: heat.reduce((a, b) => a + b, 0), rings: rings.length, mode, t })
   };
+  return api;
 })();
