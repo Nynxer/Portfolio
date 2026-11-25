@@ -100,6 +100,7 @@ NK.term = (function () {
     p.innerHTML = html;
     out.appendChild(p);
     if (html.includes("dotpic")) drawPics(p);
+    if (html.includes("dotfig")) drawFigs(p);
     follow();
     return p;
   }
@@ -117,6 +118,16 @@ NK.term = (function () {
     }
     return `<canvas class="dotpic" data-pic="${esc(key)}" role="img" aria-label="${esc(label)}"></canvas>`;
   };
+  // project figures: a labelled dot-matrix photo under the project text (js/figure.js, dev mode)
+  function drawFigs(root) {
+    root.querySelectorAll("canvas.dotfig:not([data-done])").forEach((c) => {
+      if (!NK.figure || !NK.photos) { document.addEventListener("nk:photos", () => drawFigs(root), { once: true }); return; }
+      const [wid, pid] = c.dataset.fig.split("/"), w = worldBy(wid), pr = w && w.projects.find((q) => q.id === pid);
+      c.dataset.done = "1";
+      if (!pr || !NK.figure.render(c, pr.figure, Math.min(640, (c.parentElement || out).clientWidth || 360))) c.remove();
+      follow();
+    });
+  }
   function drawPics(root) {
     root.querySelectorAll("canvas.dotpic:not([data-done])").forEach((c) => {
       const d = NK.photos && NK.photos[c.dataset.pic];
@@ -218,7 +229,7 @@ NK.term = (function () {
     if (r.kind === "post") { text(`opening ${r.post.title} …`, "dim"); hooks.blog && hooks.blog(r.post.slug); return; }
     if (r.kind !== "project") return text(`cat: ${a[0]}: Is a directory — try cd ${a[0]}`, "err");
     const { project: p, world: w } = r;
-    print(`<p class="o-kicker">${esc(w.name)} / ${esc(p.id)}.md</p><h2 class="o-title">${esc(p.title)}</h2><p class="o-body">${esc(p.summary)}</p>${p.photo ? photo(p.photo, p.title) : ""}<p class="o-list g" style="margin:8px 0 0">${p.tags.map(esc).join(" · ")}</p>`);
+    print(`<p class="o-kicker">${esc(w.name)} / ${esc(p.id)}.md</p><h2 class="o-title">${esc(p.title)}</h2><p class="o-body">${esc(p.summary)}</p>${p.figure && NK.dev ? `<canvas class="dotfig" role="img" data-fig="${esc(w.id + "/" + p.id)}"></canvas>` : ""}<p class="o-list g" style="margin:8px 0 0">${p.tags.map(esc).join(" · ")}</p>`);
     const links = [];
     if (p.paper) links.push(A(p.paper, "read the paper ↗"));
     if (p.repo) links.push(A(p.repo, "source ↗"));

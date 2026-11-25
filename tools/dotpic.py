@@ -6,15 +6,17 @@
 Only the tiny grids go into the repo, never the source photos. Needs Pillow (pip install pillow).
 Each entry: key -> (source image, crop box (l, t, r, b) or None, columns, background)
 background: None (keep everything), "light" (flood-fill a white/grey backdrop from the edges),
-"green" (drop green pixels, e.g. a cutting mat)
+"green" (drop green pixels, e.g. a cutting mat), "vignette" (fade the edges into the dark page),
+"mono" (1-bit screen capture, e.g. an e-paper menu: the dark text becomes lit dots, shading is evened out first)
 """
 import base64, json, os, sys
-from PIL import Image, ImageEnhance, ImageOps
+from PIL import Image, ImageEnhance, ImageOps, ImageFilter
 
 SRC = os.environ.get("DOTPIC_SRC", "photos-src")   # keep originals outside the repo, or in a git-ignored folder
 PHOTOS = {
     "me":       ("me.png",       (28, 10, 222, 214), 44, "light"),
-    "inkiniki": ("inkiniki.jpg", (232, 722, 1208, 1240), 96, "green"),
+    "inkiniki-hand": ("inkiniki-hand.jpg", (0, 380, 1440, 1500), 140, "vignette"),
+    "inkiniki-menu": ("inkiniki-menu.jpg", (380, 940, 1100, 1300), 150, "mono"),
 }
 
 def grid(path, crop, cols, bgmode):
@@ -22,6 +24,15 @@ def grid(path, crop, cols, bgmode):
     if crop: im = im.crop(crop)
     rows0 = max(1, round(cols * im.height / im.width))
     raw = im.resize((cols, rows0), Image.LANCZOS)   # background test on the untouched colours
+    if bgmode == "mono":
+        g = ImageOps.grayscale(im).resize((cols, rows0), Image.LANCZOS)
+        bgl = g.filter(ImageFilter.GaussianBlur(cols / 10))            # the screen's own shading
+        out = bytearray()
+        for y in range(rows0):
+            for x in range(cols):
+                ink = g.getpixel((x, y)) / max(1, bgl.getpixel((x, y))) < 0.8   # clearly darker than its surroundings = text
+                out += bytes((233, 251, 255) if ink else (0, 0, 0))
+        return {"w": cols, "h": rows0, "px": base64.b64encode(bytes(out)).decode()}
     im = ImageOps.autocontrast(im, cutoff=1)
     im = ImageEnhance.Contrast(ImageEnhance.Color(im).enhance(1.25)).enhance(1.12)
     rows = max(1, round(cols * im.height / im.width))
@@ -40,6 +51,14 @@ def grid(path, crop, cols, bgmode):
             x, y = todo.pop()
             if (x, y) in bg or not (0 <= x < cols and 0 <= y < rows) or not light(px[y][x]): continue
             bg.add((x, y)); todo += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+    if bgmode == "vignette":   # radial fade to black, so the photo melts into the page
+        for y in range(rows):
+            for x in range(cols):
+                dx, dy = (x + .5) / cols - .5, (y + .5) / rows - .52
+                k = max(0.0, min(1.0, 1.5 - 2.1 * (dx * dx * 1.45 + dy * dy * 1.5) ** 0.5))
+                k = k * k * (3 - 2 * k)
+                r, g, b = px[y][x]; px[y][x] = (int(r * k), int(g * k), int(b * k))
+                if max(px[y][x]) < 10: bg.add((x, y))
     out = bytearray()
     for y in range(rows):
         for x in range(cols):

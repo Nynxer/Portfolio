@@ -10,6 +10,7 @@
 - Projects without a repo no longer show a generic "more on github" link
 - While a photo shows, the orbit holds, the worlds shrink a little and step back, and the photo is sized to the free middle with a gap round it (never under a world); if there's no room it sits inline instead
 - Fix: world labels scale with their circle and no longer spill out of the smaller ones
+- Project figures (dev mode): `cat inkiniki` shows the device in hand as a dot-matrix photo, with dotted leader lines to the parts, an inset of the real menu screen and a one-line caption. Phones get numbered pins and a legend. Set up once in `js/figure.js`, so any project can have one
 - Hidden command: `cq`
 
 ## v1.9.3 (25 Nov 2026)

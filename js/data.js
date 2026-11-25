@@ -80,7 +80,7 @@ NK.data = {
   skills: ["Go", "Python", "C++", "Shell", "SQL", "gRPC", "Docker", "MongoDB", "Jenkins", "PyTorch", "OpenCV", "YOLO", "Linux", "CAD", "AutoCAD LISP"],
 
   // Worlds = the planets. `color` is "cyan" or "orange" (orange = hot).
-  // Project fields: repo / demo / paper (links), photo (a key in js/photos.js, dev mode only),
+  // Project fields: repo / demo / paper (links), figure (a labelled photo, dev mode only: see js/figure.js),
   // dev: true = shown only in dev mode (localhost or ?dev), hidden on the live site.
   worlds: [
     {
@@ -124,7 +124,13 @@ NK.data = {
       tagline: "Small builds for people I know.",
       desc: "Things I make when nobody's paying.",
       projects: [
-        { id: "inkiniki", title: "Inkiniki", summary: "A pocket e-paper reader I made for my friends before moving to the Netherlands. It holds books, photos, to-do lists and quotes, uploaded over Wi-Fi from a page the device serves itself.", tags: ["ESP32", "E-paper", "3D printing"], photo: "inkiniki" },
+        { id: "inkiniki", title: "Inkiniki", summary: "A pocket e-paper reader I made for my friends before moving to the Netherlands. It holds books, photos, to-do lists and quotes, uploaded over Wi-Fi from a page the device serves itself.", tags: ["ESP32", "E-paper", "3D printing"],
+          figure: {
+            photo: "inkiniki-hand",
+            labels: [["e-paper screen on a Heltec ESP32 board", 0.6, 0.52], ["3D-printed case", 0.8, 0.72]],
+            inset: { photo: "inkiniki-menu", label: "on screen: the menu" },
+            caption: "inkiniki · pocket e-paper reader · uploads over Wi-Fi"
+          } },
         { id: "home-nas", dev: true, title: "Home NAS", summary: "Self-hosted network storage on a Raspberry Pi.", tags: ["Raspberry Pi", "Linux"] }
       ]
     },

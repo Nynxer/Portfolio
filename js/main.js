@@ -90,9 +90,8 @@
 
   // ---------- nav + planets route through the terminal ----------
   if (NK.dev) {   // dot-matrix photos: only fetched in dev mode
-    const s = document.createElement("script");
-    s.src = "js/photos.js?v=1.10"; s.onload = () => document.dispatchEvent(new Event("nk:photos"));
-    document.head.appendChild(s);
+    const load = (src, done) => { const s = document.createElement("script"); s.src = src; s.onload = done; document.head.appendChild(s); };
+    load("js/figure.js?v=1.10", () => load("js/photos.js?v=1.10", () => document.dispatchEvent(new Event("nk:photos"))));
   }
   if (NK.blogOn) document.querySelectorAll('[data-cmd="blog"]').forEach((b) => (b.hidden = false));
   document.querySelectorAll("[data-cmd]").forEach((b) => b.addEventListener("click", () => { term.type(b.dataset.cmd); term.focusSoft(); }));

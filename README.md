@@ -21,7 +21,9 @@ No build step, no framework, no network requests. ~230 KB total, 57 KB of it the
 - `blog` in `js/data.js`: `"dev"` (shown only in dev, current), `true` (shown everywhere), `false` (never).
 - `dev: true` on any world or project in `js/data.js` hides it in prod.
 - Dot-matrix photos (dev only for now): put originals in `photos-src/` (git-ignored), list them in
-  `tools/dotpic.py`, run `python3 tools/dotpic.py`, then add `photo: "<key>"` to a project.
+  `tools/dotpic.py`, run `python3 tools/dotpic.py`, then add a `figure` to a project in `js/data.js`:
+  `{ photo, labels: [[text, x 0–1, y 0–1], …], inset: { photo, label }, caption }`.
+  It renders under the project text as a labelled diagram (`js/figure.js`); `person` photo `me` shows in the background dots.
 - When the blog goes live: set `blog: true` and add the Blog line back to `llms.txt`.
 
 ## Blog auto-sync
