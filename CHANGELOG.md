@@ -5,7 +5,7 @@
 - Real projects in the worlds: Motorola job scheduler and audit automation, Dhruva drafting scripts, attendance system, BEL PDF summariser, Inkiniki written up properly
 - Pluto links to the IEEE paper (terminal, simple view, no-JS page, llms.txt)
 - `dev: true` on a world or project hides it on the live site; the abandoned Go projects and Home NAS are marked
-- Dev mode only: dot-matrix photos in `whoami` and on Inkiniki (`tools/dotpic.py` builds `js/photos.js`; prod never downloads it)
+- Dev mode only: dot-matrix photos for `whoami` and Inkiniki (`tools/dotpic.py` builds `js/photos.js`; prod never downloads it). On wide screens the photo forms in the background dots at the hub, behind the worlds (clicks pass through), and the pendulum is put away; the next command, Esc or a click on a world clears it. On phones it sits inline, left of the name, like neofetch
 - Experience: Mercor from Nov 2025, PrintSmithz and Dhruva added; skills match the CV; languages line in `whoami`
 - Projects without a repo no longer show a generic "more on github" link
 - Hidden command: `cq`

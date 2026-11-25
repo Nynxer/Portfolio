@@ -100,6 +100,7 @@
   // Click a world: it bursts into embers first, then the terminal opens on a clean screen.
   sky.on("open", (w) => {
     planetOpener = document.activeElement;
+    sky.hidePhoto();
     sky.ignite(D.worlds.indexOf(w));
     // desktop: the panel opens beside the worlds, so the burst stays in view; phones: let it play first
     const wait = matchMedia("(max-width:760px)").matches ? 700 : 260;
@@ -153,6 +154,7 @@
     if (!simple.hidden) { if (e.key === "Escape") { e.preventDefault(); showSimple(false); } return; }
     if (blog.isOpen()) { if (e.key === "Escape" && !typingTarget(a)) { e.preventDefault(); blog.close(); } else if (e.key === "Escape") a.blur(); return; }
 
+    if (e.key === "Escape" && sky.photo) { e.preventDefault(); sky.hidePhoto(); return; }
     if (e.key === "Escape") {
       if (typingTarget(a) && a.value) { a.value = ""; a.dispatchEvent(new Event("input")); return; }
       if (term.isOpen()) { e.preventDefault(); term.close(); if (a === term.input && !planetOpener) a.blur(); return; }

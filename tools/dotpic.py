@@ -4,27 +4,36 @@
     python3 tools/dotpic.py          # rebuilds js/photos.js from the list below
 
 Only the tiny grids go into the repo, never the source photos. Needs Pillow (pip install pillow).
-Each entry: key -> (source image, crop box (l, t, r, b) or None, columns, drop_background)
+Each entry: key -> (source image, crop box (l, t, r, b) or None, columns, background)
+background: None (keep everything), "light" (flood-fill a white/grey backdrop from the edges),
+"green" (drop green pixels, e.g. a cutting mat)
 """
 import base64, json, os, sys
 from PIL import Image, ImageEnhance, ImageOps
 
 SRC = os.environ.get("DOTPIC_SRC", "photos-src")   # keep originals outside the repo, or in a git-ignored folder
 PHOTOS = {
-    "me":       ("me.png",       (28, 10, 222, 214), 44, True),
-    "inkiniki": ("inkiniki.jpg", (150, 830, 1400, 1490), 100, False),
+    "me":       ("me.png",       (28, 10, 222, 214), 44, "light"),
+    "inkiniki": ("inkiniki.jpg", (232, 722, 1208, 1240), 96, "green"),
 }
 
-def grid(path, crop, cols, drop_bg):
-    im = Image.open(path).convert("RGB")
+def grid(path, crop, cols, bgmode):
+    im = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
     if crop: im = im.crop(crop)
+    rows0 = max(1, round(cols * im.height / im.width))
+    raw = im.resize((cols, rows0), Image.LANCZOS)   # background test on the untouched colours
     im = ImageOps.autocontrast(im, cutoff=1)
     im = ImageEnhance.Contrast(ImageEnhance.Color(im).enhance(1.25)).enhance(1.12)
     rows = max(1, round(cols * im.height / im.width))
     sm = im.resize((cols, rows), Image.LANCZOS)
     px = [[sm.getpixel((x, y)) for x in range(cols)] for y in range(rows)]
     bg = set()
-    if drop_bg:   # flood-fill the light, grey background in from the edges
+    if bgmode == "green":
+        for y in range(rows):
+            for x in range(cols):
+                r, g, b = raw.getpixel((x, y))
+                if g - r > 30 and g > 60: bg.add((x, y))
+    if bgmode == "light":   # flood-fill the light, grey background in from the edges
         light = lambda c: min(c) > 175 and max(c) - min(c) < 40
         todo = [(x, y) for x in range(cols) for y in (0, rows - 1)] + [(x, y) for y in range(rows) for x in (0, cols - 1)]
         while todo:

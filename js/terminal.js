@@ -105,7 +105,18 @@ NK.term = (function () {
   }
 
   // ---------- dot-matrix photos (dev mode only: main.js loads js/photos.js when NK.dev) ----------
-  const photo = (key, label) => (NK.dev ? `<canvas class="dotpic" data-pic="${esc(key)}" role="img" aria-label="${esc(label)}"></canvas>` : "");
+  // Wide screens: the photo appears in the background dots at the hub (sky.showPhoto). Phones: inline, left of the text.
+  let wantPic = "";
+  const photo = (key, label) => {
+    if (!NK.dev) return "";
+    wantPic = key;
+    if (NK.photos && NK.sky && NK.sky.showPhoto(key)) return "";
+    if (!NK.photos && !matchMedia("(max-width:760px), (orientation:portrait)").matches) {   // photos still loading: try the sky once they arrive
+      document.addEventListener("nk:photos", () => { if (wantPic === key) NK.sky.showPhoto(key); }, { once: true });
+      return "";
+    }
+    return `<canvas class="dotpic" data-pic="${esc(key)}" role="img" aria-label="${esc(label)}"></canvas>`;
+  };
   function drawPics(root) {
     root.querySelectorAll("canvas.dotpic:not([data-done])").forEach((c) => {
       const d = NK.photos && NK.photos[c.dataset.pic];
@@ -248,7 +259,7 @@ NK.term = (function () {
 
   def("whoami about", "who is Nikhil?", () => {
     const P = D.person;
-    print(`<div class="who">${photo("me", P.name)}<div><h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p></div></div><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>${P.openTo ? `<p class="o-body">${openTo(P.openTo)}</p>` : ""}${P.languages ? `<p class="o-body dim">speaks ${esc(P.languages)}</p>` : ""}`);
+    print(`<div class="who">${photo("me", P.name)}<div class="who-t"><h2 class="o-title">${esc(P.name)}</h2><p class="o-kicker" style="margin-top:4px">${esc(P.role)} · ${esc(P.location)}</p></div></div><p class="o-body">${esc(P.bio[0])} ${esc(P.bio[1])}</p>${P.openTo ? `<p class="o-body">${openTo(P.openTo)}</p>` : ""}${P.languages ? `<p class="o-body dim">speaks ${esc(P.languages)}</p>` : ""}`);
     print(`<ul class="o-hl">${P.highlights.map(([a, b]) => `<li><b>${esc(a)}</b> — ${esc(b)}</li>`).join("")}</ul>`);
     print(`<div class="o-actions">${R("ls universe", "projects")}${R("experience")}${R("contact")}${A(D.links.resume.url, "résumé ↗")}</div>`);
   });
@@ -385,6 +396,7 @@ NK.term = (function () {
     line = String(line).trim();
     if (!line) return;
     if (opts.echo !== false) {
+      wantPic = ""; NK.sky && NK.sky.hidePhoto && NK.sky.hidePhoto();   // a new command clears the photo
       dimOld();
       const p = print(`${PS()}${esc(line)}`, "cmd");
       open();

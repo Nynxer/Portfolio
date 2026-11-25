@@ -10,6 +10,7 @@ NK.sky = (function () {
   const D = NK.data;
   const $ = (s) => document.querySelector(s);
   const TAU = Math.PI * 2;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
   const lerp = (a, b, t) => a + (b - a) * t;
   const easeIO = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -195,6 +196,7 @@ NK.sky = (function () {
     });
     if (!pend.grabbed && !pend.scripted) { pend.x = pivot.x; pend.y = pivot.y + pend.L; }
     buildBase();
+    if (holo.on) { if (tall()) hidePhoto(); else holo.dots = holoBuild(holo.key) || holo.dots; }
     kick();
   }
 
@@ -663,6 +665,54 @@ NK.sky = (function () {
   }
 
   // ---------- drawing ----------
+  // ---------- photo in the grid (dev mode): a dot-matrix photo drawn into the background dots at the hub ----------
+  // Behind the worlds, clicks pass through; the pendulum is put away while it shows. Wide layouts only (phones show it inline).
+  const holo = { dots: null, a: 0, on: false, t0: 0, stowed: false, key: "" };
+  function holoBuild(key) {
+    const d = NK.photos && NK.photos[key], s = stageC;
+    if (!d || !s) return null;
+    const src = atob(d.px), maxW = (s.x1 - s.x0) * 0.8, maxH = (s.y1 - s.y0) * 0.66;
+    let pitch = cell, cols = Math.min(d.w, Math.floor(maxW / pitch), Math.floor(maxH / pitch * d.w / d.h));
+    if (cols < d.w * 0.8) { pitch = cell / 2; cols = Math.min(d.w, Math.floor(maxW / pitch), Math.floor(maxH / pitch * d.w / d.h)); }   // detailed photos use half-spaced dots
+    const rows = Math.max(1, Math.round(cols * d.h / d.w)), fx = d.w / cols, fy = d.h / rows;
+    const ox = Math.round((s.hx - cols * pitch / 2 - gx0) / cell) * cell + gx0, oy = Math.round((s.hy - rows * pitch / 2 - gy0) / cell) * cell + gy0;   // snapped to the grid
+    const out = [];
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      let r = 0, g = 0, b = 0, n = 0, e = 0;
+      for (let y = Math.floor(j * fy); y < Math.max(Math.floor(j * fy) + 1, Math.floor((j + 1) * fy)); y++)
+        for (let x = Math.floor(i * fx); x < Math.max(Math.floor(i * fx) + 1, Math.floor((i + 1) * fx)); x++) {
+          const q = 3 * (y * d.w + x), R = src.charCodeAt(q), G = src.charCodeAt(q + 1), B = src.charCodeAt(q + 2);
+          if (R | G | B) { r += R; g += G; b += B; n++; } else e++;
+        }
+      if (n && n >= e) out.push(ox + i * pitch, oy + j * pitch, `rgb(${r / n | 0},${g / n | 0},${b / n | 0})`, Math.random());
+    }
+    return { list: out, size: Math.max(2, pitch * 0.62) };
+  }
+  function showPhoto(key) {
+    if (tall() || mode === "game" || mode === "intro") return false;
+    const dots = holoBuild(key);
+    if (!dots) return false;
+    holo.dots = dots; holo.key = key; holo.on = true; holo.t0 = t;
+    if (pend.visible && !holo.stowed) { holo.stowed = true; api.stow(true); }
+    kick();
+    return true;
+  }
+  function hidePhoto() {
+    if (!holo.on) return;
+    holo.on = false;
+    if (holo.stowed) { holo.stowed = false; api.stow(false); }
+    kick();
+  }
+  function drawHolo(dt) {
+    holo.a += ((holo.on ? 1 : 0) - holo.a) * Math.min(1, (dt || 0.05) * (holo.on ? 5 : 7));
+    if (!holo.dots || holo.a < 0.01) { if (!holo.on) holo.dots = null; return; }
+    const L = holo.dots.list, s = holo.dots.size, hs = s / 2;
+    const rev = reduced ? 1 : clamp((t - holo.t0) / 0.6, 0, 1);       // the dots light up in random order
+    ctx.globalAlpha = 0.62 * holo.a;
+    for (let q = 0; q < L.length; q += 4) { if (L[q + 3] > rev) continue; ctx.fillStyle = L[q + 2]; ctx.fillRect(L[q] - hs, L[q + 1] - hs, s, s); }
+    ctx.globalAlpha = 1;
+  }
+
   const BUCKETS = [
     [[95, 243, 255], 0.06, 1.3], [[95, 243, 255], 0.12, 1.5], [[95, 243, 255], 0.2, 1.8], [[44, 138, 154], 0.6, 2],
     [[95, 243, 255], 0.5, 2.2], [[95, 243, 255], 0.75, 2.5], [[95, 243, 255], 1, 2.7], [[200, 251, 255], 1, 2.9],
@@ -942,7 +992,7 @@ NK.sky = (function () {
       planets.some((p) => p.fly || p.burst || Math.abs(p.lit - target(p)) > 0.01 || (p.born && !p.gone && p.scale < 0.999) || (p.gone && p.scale > 0.01) || p.tx != null) ||
       (!pend.scripted && Math.hypot(pend.vx, pend.vy) > 3) ||
       cuts.length > 0 || holes.length > 0 || darts.length > 0 || Math.abs(orbit.v - (orbiting() && motion && mode === "idle" && hover < 0 && pinned < 0 && t >= orbit.hold && !planets.some((p) => p.gone) ? 1 : 0)) > 0.02 || Math.abs(fuse.a - (fuse.t || 0)) > 0.01 || t - web.pulse < 0.7 || planets.some((p) => p.hot > 0.01 || Math.abs((p.thr || 0) - (p.thrT || 0)) > 0.01) ||
-      Math.abs(ptr.v - (ptr.on ? 1 : 0)) > 0.01 || (ptr.on && performance.now() - ptr.last < 400);   // full frame rate while the mouse moves
+      Math.abs(ptr.v - (ptr.on ? 1 : 0)) > 0.01 || Math.abs(holo.a - (holo.on ? 1 : 0)) > 0.01 || (holo.on && t - holo.t0 < 0.7) || (ptr.on && performance.now() - ptr.last < 400);   // full frame rate while the mouse moves
   }
   const target = (p) => (mode === "game" ? 0 : hover === p.i || pinned === p.i ? 1 : 0);
 
@@ -1061,6 +1111,7 @@ NK.sky = (function () {
   function draw(dt) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawGrid();
+    drawHolo(dt);
     if (mode !== "game") { drawFuse(); if (introStyle === "classic") { if (!tall()) drawConstellation(); } else { drawCuts(); drawWeb(); } }
     planets.forEach(drawPlanet);
     drawDarts();
@@ -1104,7 +1155,8 @@ NK.sky = (function () {
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); layout(); });
   }
 
-  return {
+  const api = {
+    showPhoto, hidePhoto, get photo() { return holo.on ? holo.key : ""; },
     init, layout, kick, on: (e, f) => ((listeners[e] = listeners[e] || []).push(f)),
     startIntro, skipIntro: () => { if (mode === "intro") finishIntro(true); },
     get mode() { return mode; }, set mode(m) { mode = m; kick(); },
@@ -1127,4 +1179,5 @@ NK.sky = (function () {
     uni,
     _dbg: () => ({ orbit: orbit.a, orbitV: orbit.v, setOrbit(a) { orbit.a = a; }, cuts: cuts.length, holes: holes.length, style: introStyle, sparks: sparks.length, heat: heat.reduce((a, b) => a + b, 0), rings: rings.length, mode, t })
   };
+  return api;
 })();
